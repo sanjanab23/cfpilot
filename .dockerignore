@@ -39,7 +39,8 @@ security_audit.log
 
 # Test artifacts
 backend/tests/
-*.txt
+# Only exclude test/temp txt files — NOT authorized_emails.txt (required at runtime)
+*.log.txt
 htmlcov/
 .coverage
 .pytest_cache/
