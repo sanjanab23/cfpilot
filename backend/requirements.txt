@@ -1,0 +1,37 @@
+# CFPilot Backend Dependencies
+# Pinned versions for reproducible builds
+
+# Core Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.6.0
+email-validator==2.1.0
+
+# Security
+slowapi==0.1.9
+pyotp==2.9.0
+qrcode[pil]==7.4.2
+pyjwt==2.8.0
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.0
+python-dotenv==1.0.0
+cryptography==42.0.0
+
+# LangChain / AI
+langchain-openai==0.0.8
+langchain-core>=0.1.27,<0.2.0
+langgraph==0.0.26
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+scikit-learn==1.4.0
+
+# HTTP Client
+requests==2.31.0
+httpx==0.26.0
+
+# PPT Generation
+python-pptx==0.6.23
+matplotlib==3.8.2
+squarify==0.4.3

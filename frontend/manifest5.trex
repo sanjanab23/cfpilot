@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
+  <dashboard-extension id="com.cfpilot.extension" extension-version="0.1.0">
+    <default-locale>en_US</default-locale>
+    <name resource-id="name"/>
+    <description>CFPilot - AI Tableau Assistant</description>
+    <author name="Developer" email="dev@cfpilot.com" organization="CFPilot Inc" website="https://www.example.com"/>
+    <min-api-version>1.7</min-api-version>
+    <source-location>
+      <url>http://localhost:8000/index.html</url>
+    </source-location>
+    <icon>iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QwWESwqPiFj+wAAAQVJREFUeNrt2rFZwzAQBuD7SAdNmsA9vUnKCBnA21u8CcoA2cAbJCNkAI9vYpI2cQo78V+iQ44p2iB1ue9Lln26Qw8SgCIIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAIgiAI8r/8/t79/fO42E/f1/uD/fT9c79/u9gP4JdPS/u82A/g122xH8Cvr8V+AL++L/YD+HW12A/g181iP4Bf94v9AH49LfYD+HVa7Afw63qxtx8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4Lw/T0L5OQ/s6De3rNLSv09C+TkP7Og3t6zS0r9PQvk5D+zoN7es0tK/T0L5OQ/v6G/wB92QW+73S8hYAAAAASUVORK5CYII=</icon>
+    <permissions>
+      <permission>full data</permission>
+    </permissions>
+  </dashboard-extension>
+  <resources>
+    <resource id="name">
+      <text locale="en_US">CFPilot Assistant</text>
+    </resource>
+  </resources>
+</manifest>

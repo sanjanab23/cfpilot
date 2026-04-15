@@ -1,0 +1,139 @@
+name: CD — Build & Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+# Required for OIDC (passwordless Azure authentication)
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_NAME: ${{ secrets.ACR_NAME }}          # acrciadev
+  IMAGE_NAME: cfpilot-backend
+  RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }} # rg-ci-cia-dev
+  WEBAPP_NAME: ${{ secrets.WEBAPP_NAME }}       # app-ci-cia-dev
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+      acr_server: ${{ steps.acr_login.outputs.registry }}
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Authenticate to Azure via OIDC (no password stored) ───────────────
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ── 3. Log in to ACR ─────────────────────────────────────────────────────
+      - name: Log in to Azure Container Registry
+        id: acr_login
+        run: |
+          ACR_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer --output tsv)
+          az acr login --name ${{ env.ACR_NAME }}
+          echo "registry=$ACR_SERVER" >> $GITHUB_OUTPUT
+
+      # ── 4. Generate image tags ────────────────────────────────────────────────
+      - name: Generate image metadata
+        id: meta
+        run: |
+          SHORT_SHA=${GITHUB_SHA::8}
+          echo "tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "full_image=${{ steps.acr_login.outputs.registry }}/${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
+          echo "Image will be: ${{ steps.acr_login.outputs.registry }}/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+
+      # ── 5. Set up Docker Buildx (layer caching) ───────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 6. Build and push image ───────────────────────────────────────────────
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.full_image }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.full_image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Azure App Service
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: production
+      url: https://${{ secrets.WEBAPP_NAME }}.azurewebsites.net
+
+    steps:
+      # ── 1. Azure Login ────────────────────────────────────────────────────────
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ── 2. Get ACR server URL ─────────────────────────────────────────────────
+      - name: Get ACR server
+        id: acr
+        run: |
+          ACR_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer --output tsv)
+          echo "server=$ACR_SERVER" >> $GITHUB_OUTPUT
+
+      # ── 3. Deploy new image to App Service ───────────────────────────────────
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ steps.acr.outputs.server }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.image_tag }}
+
+      # ── 4. Configure app settings (runtime env vars from secrets) ────────────
+      - name: Set App Service application settings
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.WEBAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings \
+              OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}" \
+              DB_ENCRYPTION_KEY="${{ secrets.DB_ENCRYPTION_KEY }}" \
+              DB_PATH="/app/data/cfpilot.db" \
+              WEBSITES_PORT="8000" \
+              WEB_CONCURRENCY="2" \
+              ENV="production"
+
+      # ── 5. Restart & Health check ─────────────────────────────────────────────
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --name ${{ env.WEBAPP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+
+      - name: Health check
+        run: |
+          echo "Waiting 30s for app to start..."
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health || echo "000")
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::warning::Health check returned $STATUS — app may still be starting up."
+          else
+            echo "✅ Health check passed!"
+          fi
+
+      - name: Print deployment URL
+        run: |
+          echo "🚀 Deployed to: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"

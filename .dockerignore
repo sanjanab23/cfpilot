@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+backend/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Database — root level and nested (e.g. backend/cfpilot.db)
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+security_audit.log
+
+# IDE
+.vscode/
+.idea/
+
+# CI/CD
+.github/
+
+# Test artifacts
+backend/tests/
+*.txt
+htmlcov/
+.coverage
+.pytest_cache/

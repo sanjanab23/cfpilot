@@ -1,0 +1,65 @@
+CREATE TABLE users (
+                email TEXT PRIMARY KEY,
+                password TEXT NOT NULL,
+                name TEXT,
+                company TEXT,
+                phone TEXT,
+                mfa_secret TEXT NOT NULL,
+                role TEXT DEFAULT 'user'
+            , mfa_enabled INTEGER DEFAULT 1, failed_login_attempts INTEGER DEFAULT 0, locked_until DATETIME DEFAULT NULL)
+
+CREATE TABLE chat_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                sender TEXT NOT NULL,
+                message TEXT NOT NULL,
+                chart_data TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+
+CREATE TABLE sqlite_sequence(name,seq)
+
+CREATE TABLE user_contexts (
+                email TEXT PRIMARY KEY,
+                context TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+            )
+
+CREATE TABLE user_activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    action TEXT NOT NULL, -- 'login' or 'logout'
+    ip_address TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+)
+
+CREATE TABLE topic_analytics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    topic TEXT NOT NULL, -- 'leads', 'opportunities', 'accounts', etc.
+    count INTEGER DEFAULT 1,
+    last_mentioned TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+)
+
+CREATE TABLE message_stats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE NOT NULL,
+    total_messages INTEGER DEFAULT 0,
+    user_messages INTEGER DEFAULT 0,
+    bot_messages INTEGER DEFAULT 0,
+    charts_generated INTEGER DEFAULT 0,
+    unique_users INTEGER DEFAULT 0,
+    UNIQUE(date)
+)
+
+CREATE TABLE used_totp_codes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                code TEXT NOT NULL,
+                used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(email, code)
+            )
+

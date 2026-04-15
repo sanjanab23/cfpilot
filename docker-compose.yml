@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_PATH=/app/data/cfpilot.db
+      - ENV=development
+    restart: always
+
+volumes:
+  data:

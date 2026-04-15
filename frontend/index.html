@@ -1,0 +1,4047 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFPilot Assistant</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. MODERN THEME VARIABLES --- */
+        :root {
+            /* Palette: Modern Indigo & Slate */
+            --primary-color: #6366f1;
+            /* Indigo */
+            --primary-hover: #4f46e5;
+            --bg-color: #f8fafc;
+            /* Very light cool grey */
+
+            /* UI Elements */
+            --header-bg: #ffffff;
+            --header-text: #1e293b;
+            --border-color: #e2e8f0;
+
+            /* Chat Bubbles */
+            --bot-bg: #ffffff;
+            --bot-text: #334155;
+            --bot-border: #f1f5f9;
+            --user-bg: #6366f1;
+            --user-text: #ffffff;
+
+            /* Shadows & Radius */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius-bubble: 12px;
+            --radius-input: 24px;
+
+            /* Text Colors */
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+        }
+
+        /* --- DARK MODE THEME --- */
+        [data-theme="dark"] {
+            --primary-color: #818cf8;
+            --primary-hover: #6366f1;
+            --bg-color: #0f172a;
+
+            --header-bg: #1e293b;
+            --header-text: #f1f5f9;
+            --border-color: #334155;
+
+            --bot-bg: #1e293b;
+            --bot-text: #e2e8f0;
+            --bot-border: #334155;
+            --user-bg: #6366f1;
+            --user-text: #ffffff;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+        }
+
+        /* --- 2. GLOBAL RESET & SCROLLBARS --- */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: #334155;
+        }
+
+        /* Sleek Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- 3. LOGIN & AUTH OVERLAY --- */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            /* Dark Slate Gradient */
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            overflow-y: auto;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 1);
+            color: #333;
+            padding: 32px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .login-card h3 {
+            margin: 0 0 20px 0;
+            color: #1e293b;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .login-card input,
+        .login-card select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 0.95em;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .login-card input:focus,
+        .login-card select:focus {
+            border-color: var(--primary-color);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: background 0.2s;
+        }
+
+        .login-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .switch-link {
+            display: block;
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #64748b;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85em;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        .success-msg {
+            color: #10b981;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #qr-image {
+            width: 160px;
+            height: 160px;
+            margin: 15px auto;
+            display: block;
+            mix-blend-mode: multiply;
+        }
+
+        /* --- Password Toggle Styles --- */
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 40px;
+            /* Space for the eye icon */
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            cursor: pointer;
+            color: #64748b;
+            z-index: 10;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary-color);
+        }
+
+        /* --- Password Requirements Tooltip --- */
+        .pw-info-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+        }
+
+        .pw-info-icon {
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.85em;
+            transition: color 0.2s;
+        }
+
+        .pw-info-icon:hover {
+            color: var(--primary-color);
+        }
+
+        .pw-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.78em;
+            line-height: 1.6;
+            white-space: nowrap;
+            z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            min-width: 220px;
+        }
+
+        .pw-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1e293b;
+        }
+
+        .pw-tooltip strong {
+            display: block;
+            color: #818cf8;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+
+        .pw-tooltip li {
+            list-style: none;
+            padding: 1px 0;
+        }
+
+        .pw-tooltip li::before {
+            content: '✓ ';
+            color: #34d399;
+        }
+
+        .pw-info-wrapper:hover .pw-tooltip,
+        .pw-info-icon:focus+.pw-tooltip {
+            display: block;
+            animation: fadeIn 0.15s ease;
+        }
+
+        /* --- Forgot Password link --- */
+        .forgot-link {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.82em;
+            color: var(--primary-color);
+            cursor: pointer;
+            text-align: right;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Admin Dashboard Overlay --- */
+        #admin-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            padding: 18px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            font-size: 1.25em;
+            color: white;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .admin-btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.88em;
+            transition: all 0.2s;
+        }
+
+        .admin-btn.primary {
+            background: white;
+            color: #4f46e5;
+        }
+
+        .admin-btn.primary:hover {
+            background: #e0e7ff;
+        }
+
+        .admin-btn.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .admin-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .admin-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.8em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #818cf8;
+            line-height: 1;
+        }
+
+        .stat-card .stat-icon {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+        }
+
+        .admin-section-title {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+
+        .admin-table-wrapper {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88em;
+        }
+
+        .admin-table th {
+            background: #0f172a;
+            color: #64748b;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.82em;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-bottom: 1px solid #334155;
+        }
+
+        .admin-table td {
+            padding: 12px 16px;
+            color: #cbd5e1;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .admin-table tr:hover td {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .role-badge.admin {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        .role-badge.user {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .mfa-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.78em;
+            font-weight: 600;
+        }
+
+        .mfa-badge.on {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .mfa-badge.off {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+        }
+
+        /* --- 4. APP HEADER --- */
+        header {
+            background: var(--header-bg);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            z-index: 10;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .brand {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+            display: none;
+        }
+
+        .search-container.active {
+            display: block;
+        }
+
+        #search-input {
+            width: 100%;
+            padding: 8px 35px 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            font-size: 0.9em;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-close {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .search-close:hover {
+            color: var(--primary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #64748b;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        /* --- 5. CHAT AREA --- */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        /* Message Rows & Avatars */
+        .msg-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            width: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg-row.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+        }
+
+        .bot .avatar {
+            background: #e0e7ff;
+            color: var(--primary-color);
+        }
+
+        .user .avatar {
+            background: var(--user-bg);
+            color: white;
+        }
+
+        /* Message Bubbles */
+        .message {
+            padding: 12px 18px;
+            border-radius: var(--radius-bubble);
+            max-width: 85%;
+            font-size: 0.95em;
+            line-height: 1.5;
+            box-shadow: var(--shadow-sm);
+            overflow-wrap: break-word;
+            word-break: break-word;
+            position: relative;
+        }
+
+        .bot .message {
+            background: var(--bot-bg);
+            color: var(--bot-text);
+            border: 1px solid var(--bot-border);
+            border-top-left-radius: 2px;
+        }
+
+        .timestamp,
+        .message-actions {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Message Actions */
+        .message-actions {
+            display: none;
+            gap: 4px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .msg-row:hover .message-actions {
+            display: flex;
+        }
+
+        .msg-action-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .msg-action-btn:hover {
+            background: var(--bg-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        /* Timestamp */
+        .timestamp {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: block;
+        }
+
+        .user .message {
+            background: var(--user-bg);
+            color: var(--user-text);
+            border-top-right-radius: 2px;
+        }
+
+        /* --- 6. RICH CONTENT STYLES (Markdown, Tables, Charts) --- */
+        .message strong {
+            font-weight: 600;
+            color: inherit;
+        }
+
+        /* Tables */
+        .message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.9em;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .message th {
+            background-color: #f8fafc;
+            color: #475569;
+            text-align: left;
+            padding: 10px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .message td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        .message tr:last-child td {
+            border-bottom: none;
+        }
+
+        .message tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 260px;
+            width: 100%;
+            background: white;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        /* Collapsible Details (Scan Results) */
+        details {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.9em;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 500;
+            color: #475569;
+            outline: none;
+        }
+
+        summary:hover {
+            color: var(--primary-color);
+        }
+
+        details>div {
+            margin-top: 10px;
+            color: #64748b;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        /* Suggestions (Zero State) */
+        #suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: auto;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        .chip {
+            background: white;
+            border: 1px solid var(--border-color);
+            color: #64748b;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chip:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* --- 7. INPUT AREA (Auto-Expanding) --- */
+        #input-area {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 2px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            background: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 12px 15px;
+            font-family: inherit;
+            font-size: 0.95em;
+            resize: none;
+            outline: none;
+            max-height: 120px;
+            min-height: 24px;
+            display: block;
+            box-sizing: border-box;
+            line-height: 1.4;
+        }
+
+        .action-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        #mic-btn {
+            background: transparent;
+            color: #94a3b8;
+        }
+
+        #mic-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        #mic-btn.listening {
+            background: #ef4444;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        #send-btn {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        #send-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        #send-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        textarea:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .ppt-header .back-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .sf-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.68em;
+            color: #0284c7;
+            background: rgba(2, 132, 199, 0.08);
+            border: 1px solid rgba(2, 132, 199, 0.2);
+            border-radius: 4px;
+            padding: 1px 6px;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .disclaimer {
+            background: white;
+            text-align: center;
+            font-size: 0.75em;
+            color: #94a3b8;
+            padding: 0 0 10px 0;
+            /* Add bottom padding */
+            width: 100%;
+        }
+
+        /* --- CONVERSATION THREADING --- */
+        .thread-container {
+            border-left: 3px solid var(--primary-color);
+            margin-left: 20px;
+            padding-left: 15px;
+            margin-top: 10px;
+        }
+
+        .thread-header {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .new-thread-btn {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .new-thread-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        /* --- MOBILE OPTIMIZATION --- */
+        @media (max-width: 768px) {
+            header {
+                padding: 10px 15px;
+            }
+
+            .brand {
+                font-size: 1em;
+            }
+
+            .search-container {
+                max-width: 100%;
+                order: 3;
+                width: 100%;
+            }
+
+            #chat-container {
+                padding: 15px 10px;
+                gap: 15px;
+            }
+
+            .message {
+                max-width: 90%;
+                font-size: 0.9em;
+            }
+
+            .avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75em;
+            }
+
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            .action-btn {
+                width: 44px;
+                height: 44px;
+            }
+
+            #input-area {
+                padding: 12px 10px;
+            }
+
+            .chip {
+                font-size: 0.8em;
+                padding: 6px 12px;
+            }
+        }
+
+        /* --- ENHANCED ANIMATIONS --- */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .msg-row.user {
+            animation: slideInRight 0.3s ease;
+        }
+
+        .msg-row.bot {
+            animation: slideInLeft 0.3s ease;
+        }
+
+        .icon-btn,
+        .action-btn,
+        .msg-action-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .icon-btn:active,
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Chart fullscreen modal */
+        .chart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .chart-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .chart-modal-content {
+            background: var(--header-bg);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 90vw;
+            max-height: 90vh;
+            position: relative;
+        }
+
+        .chart-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--bg-color);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            z-index: 10;
+        }
+
+        .chart-modal-close:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .chart-fullscreen-container {
+            width: 80vw;
+            height: 70vh;
+            position: relative;
+        }
+
+        /* Chart action buttons */
+        .chart-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .chart-container:hover .chart-actions {
+            opacity: 1;
+        }
+
+        .chart-action-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border-color);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .chart-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Smooth theme transition */
+        body,
+        header,
+        .message,
+        .login-card,
+        .chart-container,
+        .chip {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* ─── PPT BUILDER VIEW ──────────────────────────────────── */
+        #ppt-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ppt-header {
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ppt-header .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 1em;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .ppt-header .back-btn:hover {
+            background: var(--border-color);
+        }
+
+        .ppt-header .ppt-title {
+            font-weight: 600;
+            color: var(--header-text);
+            font-size: 0.95em;
+        }
+
+        .ppt-header .ppt-badge {
+            background: var(--primary-color);
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .ppt-header .ppt-slide-count {
+            background: rgba(34, 197, 94, 0.12);
+            color: #16a34a;
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        /* Chat area — always visible at top, scrollable */
+        #ppt-chat-area {
+            overflow-y: auto;
+            padding: 16px 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+            max-height: 260px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--header-bg);
+        }
+
+        /* When no slides yet, chat expands to fill space */
+        #ppt-chat-area.no-slides {
+            flex: 1;
+            max-height: none;
+            border-bottom: none;
+            background: var(--bg-color);
+        }
+
+        /* Slides area — takes remaining space */
+        #ppt-slides-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* PPT message bubbles */
+        .ppt-user-bubble {
+            align-self: flex-end;
+            background: var(--user-bg);
+            color: var(--user-text);
+            padding: 10px 14px;
+            border-radius: 16px 16px 4px 16px;
+            max-width: 75%;
+            font-size: 0.88em;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .ppt-bot-bubble {
+            align-self: flex-start;
+            background: var(--bot-bg);
+            border: 1px solid var(--bot-border);
+            color: var(--bot-text);
+            padding: 10px 14px;
+            border-radius: 4px 16px 16px 16px;
+            max-width: 80%;
+            font-size: 0.88em;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .ppt-slide-card {
+            background: var(--bot-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s, transform 0.15s;
+            border-left: 4px solid var(--border-color);
+        }
+
+        .ppt-slide-card[data-type="cover"] {
+            border-left-color: #0D47A1;
+        }
+
+        .ppt-slide-card[data-type="section"] {
+            border-left-color: #1565C0;
+        }
+
+        .ppt-slide-card[data-type="kpi"] {
+            border-left-color: #00838F;
+        }
+
+        .ppt-slide-card[data-type="chart"] {
+            border-left-color: #6366f1;
+        }
+
+        .ppt-slide-card[data-type="split"] {
+            border-left-color: #7C3AED;
+        }
+
+        .ppt-slide-card[data-type="table"] {
+            border-left-color: #0284C7;
+        }
+
+        .ppt-slide-card[data-type="timeline"] {
+            border-left-color: #DB2777;
+        }
+
+        .ppt-slide-card[data-type="pyramid"] {
+            border-left-color: #D97706;
+        }
+
+        .ppt-slide-card[data-type="bullets"] {
+            border-left-color: #059669;
+        }
+
+        .ppt-slide-card[data-type="thankyou"] {
+            border-left-color: #64748B;
+        }
+
+        .ppt-slide-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .ppt-slide-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .ppt-slide-number {
+            font-size: 0.72em;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .ppt-slide-type-badge {
+            font-size: 0.68em;
+            color: var(--text-muted);
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 2px 7px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .ppt-slide-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ppt-slide-action-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ppt-slide-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .ppt-slide-action-btn.remove:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .ppt-slide-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .ppt-slide-subtitle {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .ppt-data-preview {
+            font-size: 0.78em;
+            color: var(--text-secondary);
+            background: var(--bg-color);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-top: 6px;
+            max-height: 80px;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+
+        .ppt-insights {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .ppt-insight-item {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .ppt-insight-item::before {
+            content: '▸';
+            color: var(--primary-color);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Inline edit area */
+        .ppt-edit-area {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+        }
+
+        .ppt-edit-area textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bot-bg);
+            color: var(--text-primary);
+            font-size: 0.88em;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        .ppt-edit-area textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .ppt-edit-btns {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+
+        .ppt-edit-apply {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .ppt-edit-cancel {
+            background: none;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        /* Bottom bar */
+        #ppt-bottom-bar {
+            border-top: 1px solid var(--border-color);
+            background: var(--header-bg);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        #ppt-input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            padding: 8px 14px;
+            gap: 8px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #ppt-input-wrapper:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        #ppt-user-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.93em;
+            resize: none;
+            max-height: 80px;
+            outline: none;
+        }
+
+        #ppt-send-btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95em;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            box-shadow: 0 3px 8px rgba(99, 102, 241, 0.35);
+            transition: all 0.2s;
+        }
+
+        #ppt-send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(99, 102, 241, 0.45);
+        }
+
+        #ppt-proceed-btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 20px;
+            height: 38px;
+            padding: 0 18px;
+            display: none;
+            align-items: center;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            font-size: 0.85em;
+            font-weight: 600;
+            gap: 6px;
+            box-shadow: 0 3px 8px rgba(34, 197, 94, 0.35);
+            transition: all 0.2s;
+        }
+
+        #ppt-proceed-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(34, 197, 94, 0.45);
+        }
+
+        .ppt-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 0.88em;
+            padding: 10px 0;
+        }
+
+        .ppt-loading-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: pptPulse 1.2s ease-in-out infinite;
+        }
+
+        .ppt-loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .ppt-loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pptPulse {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.7);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUpModal {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #ppt-view {
+            animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ppt-header {
+            background: var(--header-bg);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ppt-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+
+        .ppt-welcome-msg {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            color: var(--text-primary);
+            font-size: 0.95em;
+            line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.05);
+            animation: fadeInScale 0.4s ease-out;
+        }
+
+        #ppt-bottom-bar {
+            padding: 16px 24px;
+            background: var(--header-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        #ppt-input-wrapper {
+            flex: 1;
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 2px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        #ppt-input-wrapper:focus-within {
+            background: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        #ppt-mic-btn {
+            background: transparent;
+            color: #94a3b8;
+        }
+
+        #ppt-mic-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        #ppt-mic-btn.listening {
+            background: #ef4444;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .ppt-welcome-msg {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(139, 92, 246, 0.04));
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            padding: 18px 20px;
+            color: var(--text-primary);
+            font-size: 0.92em;
+            line-height: 1.6;
+        }
+
+        .ppt-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .ppt-chip {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+            padding: 6px 13px;
+            border-radius: 16px;
+            font-size: 0.82em;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 500;
+        }
+
+        .ppt-chip:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .ppt-download-banner {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .ppt-download-btn {
+            background: white;
+            color: #16a34a;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.88em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .ppt-download-btn:hover {
+            background: #f0fdf4;
+            transform: translateY(-1px);
+        }
+
+        /* ─── PPT Bot Response Bubble ─────────────────── */
+        .ppt-bot-bubble {
+            align-self: flex-start;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.07), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.18);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.9em;
+            line-height: 1.55;
+            color: var(--text-primary);
+            max-width: 90%;
+            animation: fadeSlideIn 0.3s ease;
+        }
+
+        /* ─── Type-coloured slide card left borders ─── */
+        .ppt-slide-card[data-type="chart"] {
+            border-left: 4px solid #6366f1;
+        }
+
+        .ppt-slide-card[data-type="kpi"] {
+            border-left: 4px solid #22c55e;
+        }
+
+        .ppt-slide-card[data-type="table"] {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .ppt-slide-card[data-type="bullets"] {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .ppt-slide-card[data-type="timeline"] {
+            border-left: 4px solid #a855f7;
+        }
+
+        .ppt-slide-card[data-type="cover"] {
+            border-left: 4px solid #ec4899;
+        }
+
+        .ppt-slide-card[data-type="section"] {
+            border-left: 4px solid #14b8a6;
+        }
+
+        .ppt-slide-card[data-type="thankyou"] {
+            border-left: 4px solid #f97316;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="login-overlay">
+        <div style="margin-bottom: 20px; text-align: center;"><i class="fas fa-bolt"
+                style="font-size: 3em; color: #fbbf24;"></i>
+            <h1 style="margin: 5px 0; font-size: 2em; font-weight:600;">CFPilot</h1>
+        </div>
+        <div id="view-login" class="login-card">
+            <h3>Welcome Back</h3><input type="email" id="login-email" placeholder="Email">
+            <div class="password-wrapper"><input type="password" id="login-password" placeholder="Password"><i
+                    class="fas fa-eye toggle-password" onclick="togglePassword('login-password', this)"></i></div>
+            <span class="forgot-link" onclick="switchView('forgot-password')">Forgot Password?</span>
+            <button class="login-btn" onclick="handleLogin()">Log In</button><span class="switch-link"
+                onclick="switchView('signup')">Create an account</span>
+            <p id="login-error" class="error-msg"></p>
+        </div>
+        <div id="view-signup" class="login-card hidden">
+            <h3>Create Account</h3>
+            <input type="text" id="reg-name" placeholder="Full Name">
+            <select id="reg-company">
+                <option value="" disabled selected>Select Company</option>
+                <option value="tcl">TCL</option>
+                <option value="tcml">TCML</option>
+                <option value="tcna">TCNA</option>
+                <option value="tce">TCE</option>
+            </select>
+            <input type="email" id="reg-email" placeholder="Authorized Email">
+            <div style="display:flex;align-items:center;gap:4px;">
+                <div class="password-wrapper" style="flex:1;">
+                    <input type="password" id="reg-password" placeholder="Password (min 12 chars)">
+                    <i class="fas fa-eye toggle-password" onclick="togglePassword('reg-password', this)"></i>
+                </div>
+                <div class="pw-info-wrapper">
+                    <i class="fas fa-info-circle pw-info-icon" tabindex="0"></i>
+                    <div class="pw-tooltip">
+                        <strong>Password Requirements</strong>
+                        <ul style="margin:0;padding:0;">
+                            <li>At least 12 characters</li>
+                            <li>1 uppercase letter (A-Z)</li>
+                            <li>1 lowercase letter (a-z)</li>
+                            <li>1 number (0-9)</li>
+                            <li>1 special char (!@#$%^&amp;*...)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <button class="login-btn" onclick="handleSignup()">Sign Up</button>
+            <span class="switch-link" onclick="switchView('login')">Back to Login</span>
+            <p id="signup-msg" class="error-msg"></p>
+        </div>
+        <div id="view-mfa" class="login-card hidden">
+            <h3>2-Step Verification</h3>
+            <p style="font-size:0.9em;margin-bottom:10px;color:#64748b;">Scan with Authenticator App</p>
+            <img id="qr-image" src="" alt="MFA QR Code">
+            <input type="text" id="mfa-code" placeholder="000 000"
+                style="text-align:center;letter-spacing:4px;font-weight:bold;">
+            <button class="login-btn" onclick="handleMFA()">Verify &amp; Enter</button>
+            <p id="mfa-error" class="error-msg"></p>
+        </div>
+        <!-- Forgot Password (MFA Reset) View -->
+        <div id="view-forgot-password" class="login-card hidden">
+            <h3>Reset Password</h3>
+            <p style="font-size:0.88em;color:#64748b;margin-bottom:12px;">Enter your email, Authenticator code, and a
+                new password.</p>
+            <input type="email" id="forgot-email" placeholder="Email (@tatachemicals.com)">
+            <input type="text" id="forgot-mfa-code" placeholder="Authenticator Code (000000)"
+                style="text-align:center;letter-spacing:4px;font-weight:bold;">
+            <div class="password-wrapper">
+                <input type="password" id="forgot-new-password" placeholder="New Password (min 12 chars)">
+                <i class="fas fa-eye toggle-password" onclick="togglePassword('forgot-new-password', this)"></i>
+            </div>
+            <div class="password-wrapper">
+                <input type="password" id="forgot-new-password-confirm" placeholder="Confirm New Password">
+                <i class="fas fa-eye toggle-password" onclick="togglePassword('forgot-new-password-confirm', this)"></i>
+            </div>
+            <button class="login-btn" onclick="handleResetPasswordMfa()">Reset Password</button>
+            <span class="switch-link" onclick="switchView('login')">Back to Login</span>
+            <p id="forgot-msg" class="error-msg"></p>
+        </div>
+    </div>
+    <!-- Admin Dashboard Overlay -->
+    <div id="admin-view" class="hidden">
+        <div class="admin-header">
+            <h1><i class="fas fa-shield-alt"></i> Admin Dashboard <span
+                    style="font-size:0.6em;font-weight:400;opacity:0.75;margin-left:10px;">CFPilot</span></h1>
+            <div class="admin-header-actions">
+                <button class="admin-btn primary" onclick="adminEnterChat()"><i class="fas fa-comments"></i>&nbsp;Go to
+                    Chat</button>
+                <button class="admin-btn danger" onclick="handleAdminLogout()"><i
+                        class="fas fa-sign-out-alt"></i>&nbsp;Logout</button>
+            </div>
+        </div>
+        <div class="admin-body">
+            <div>
+                <div class="admin-section-title">&#128202; System Overview</div>
+                <div class="admin-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128101;</div>
+                        <div class="stat-value" id="stat-total-users">&mdash;</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128272;</div>
+                        <div class="stat-value" id="stat-mfa-enabled">&mdash;</div>
+                        <div class="stat-label">MFA Enabled</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128172;</div>
+                        <div class="stat-value" id="stat-chat-prompts">&mdash;</div>
+                        <div class="stat-label">Chat Prompts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128202;</div>
+                        <div class="stat-value" id="stat-ppt-generations">&mdash;</div>
+                        <div class="stat-label">PPTs Generated</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#127381;</div>
+                        <div class="stat-value" id="stat-recent-signups">&mdash;</div>
+                        <div class="stat-label">Recent Signups</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="admin-section-title">&#128100; Registered Users</div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Name</th>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>MFA</th>
+                                <th>Failed Logins</th>
+                                <th>Chats</th>
+                                <th>PPTs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody">
+                            <tr>
+                                <td colspan="8" style="text-align:center;color:#475569;padding:24px;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div>
+                <div class="admin-section-title">&#128221; Detailed Agent Logs</div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-logs-tbody">
+                            <tr>
+                                <td colspan="4" style="text-align:center;color:#475569;padding:24px;">No logs recorded.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="brand"><i class="fas fa-bolt"></i>CFPilot</div>
+        <div class="search-container" id="search-container"><input type="text" id="search-input"
+                placeholder="Search messages..."><i class="fas fa-times search-close" onclick="closeSearch()"></i></div>
+        <div class="header-actions">
+            <button id="admin-dash-btn" class="icon-btn hidden" title="Admin Dashboard" onclick="showAdminDashboard()">
+                <i class="fas fa-shield-alt"></i>
+            </button>
+            <button id="search-btn" class="icon-btn" title="Search Messages"><i
+                    class="fas fa-search"></i></button><button id="theme-toggle" class="icon-btn"
+                title="Toggle Dark Mode"><i class="fas fa-moon"></i></button><button id="ppt-btn" class="icon-btn"
+                title="Generate Presentation" style="color: var(--primary-color);"><i
+                    class="fas fa-file-powerpoint"></i></button><button id="clear-btn" class="icon-btn"
+                title="Clear History"><i class="fas fa-trash-alt"></i></button><button id="logout-btn" class="icon-btn"
+                title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </header>
+    <!-- Chart Fullscreen Modal -->
+    <div class="chart-modal" id="chart-modal">
+        <div class="chart-modal-content"><button class="chart-modal-close" onclick="closeChartModal()"><i
+                    class="fas fa-times"></i></button>
+            <div class="chart-fullscreen-container"><canvas id="fullscreen-chart"></canvas></div>
+        </div>
+    </div>
+    <div id="chat-container">
+        <div id="suggestions" class="hidden">
+            <div class="chip" onclick="fillInput('Summarize the dashboard')">🔍 Summarize Dashboard </div>
+            <div class="chip" onclick="fillInput('Total Leads')">📈 Total Leads</div>
+            <div class="chip" onclick="fillInput('Total Opportunities')">🏆 Total Opportunities</div>
+            <div class="chip"
+                onclick="fillInput('Make a Leaderboard consisting of sales person name , total leads , qualified leads , lead conversion ratio')">
+                🧩 Sales Person Leaderboard</div>
+        </div>
+    </div>
+    <div id="input-area"><button id="mic-btn" class="action-btn" title="Voice Input"><i
+                class="fas fa-microphone"></i></button>
+        <div class="input-wrapper"><textarea id="user-input" rows="1"
+                placeholder="Ask a question about your data..."></textarea></div><button id="send-btn"
+            class="action-btn" title="Send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+    <div class="disclaimer">CF Pilot can make mistakes. Please check important info.</div>
+    <!-- ─── PPT BUILDER VIEW ─────────────────────────── -->
+    <div id="ppt-view" class="hidden">
+        <!-- Header -->
+        <div class="ppt-header">
+            <button class="back-btn" onclick="closePPTView()"><i class="fas fa-arrow-left"></i>Back</button>
+            <span class="ppt-title"><i class="fas fa-file-powerpoint" style="color:var(--primary-color)"></i> PPT
+                Builder</span>
+            <span class="ppt-slide-count" id="ppt-slide-count"></span>
+            <div style="flex:1"></div>
+            <!-- Step indicators -->
+            <div id="ppt-steps"
+                style="display:flex;align-items:center;gap:6px;font-size:0.75em;opacity:0.85;margin-right:8px;">
+                <span id="ppt-step-1"
+                    style="padding:3px 10px;border-radius:12px;background:var(--primary-color);color:white;font-weight:600;">①
+                    Describe</span>
+                <span style="color:var(--text-secondary);">›</span>
+                <span id="ppt-step-2"
+                    style="padding:3px 10px;border-radius:12px;background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">②
+                    Review</span>
+                <span style="color:var(--text-secondary);">›</span>
+                <span id="ppt-step-3"
+                    style="padding:3px 10px;border-radius:12px;background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;">③
+                    Download</span>
+            </div>
+        </div>
+        <!-- Chat area (always visible, scrollable) -->
+        <div id="ppt-chat-area" class="no-slides">
+            <div class="ppt-welcome-msg"><strong>🎨 Hi ! I'm your Presentation Builder.</strong><br>
+                Tell me what you'd like the deck to cover &mdash; I' ll pull the data from Salesforce
+                and build the slides automatically. You can keep refining with follow-up messages. <div
+                    class="ppt-chips"><span class="ppt-chip" onclick="pptFillInput('Full lead breakdown analysis')">📊
+                        Lead
+                        Breakdown</span><span class="ppt-chip" onclick="pptFillInput('Opportunity pipeline summary')">🎯
+                        Pipeline
+                        Summary</span><span class="ppt-chip" onclick="pptFillInput('Billing and invoice analysis')">💰
+                        Billing
+                        Analysis</span><span class="ppt-chip" onclick="pptFillInput('Actual vs target performance')">📈
+                        Actual vs
+                        Target</span><span class="ppt-chip"
+                        onclick="pptFillInput('Customer visit and VOC analysis')">🗺️ Visit
+                        Analysis</span></div>
+            </div>
+        </div>
+        <!-- Slides preview area (shown after generation) -->
+        <div id="ppt-slides-area" class="hidden"></div>
+        <!-- Bottom input bar -->
+        <div id="ppt-bottom-bar">
+            <button id="ppt-mic-btn" class="action-btn" title="Voice Input">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <div id="ppt-input-wrapper"><textarea id="ppt-user-input" rows="1"
+                    placeholder="Describe what you want in the deck..."
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPPTPrompt();}"></textarea>
+            </div><button id="ppt-send-btn" onclick="sendPPTPrompt()" title="Generate Slides"><i
+                    class="fas fa-magic"></i></button><button id="ppt-proceed-btn" onclick="proceedToDownload()"><i
+                    class="fas fa-download"></i>&nbsp;Generate &amp; Download</button>
+        </div>
+    </div>
+    <script>tableau.extensions.initializeAsync().then(() => console.log("Connected!"));
+
+        marked.setOptions({
+            breaks: true, gfm: true
+        });
+
+        // Finding #11: HTML escape helper for safe DOM interpolation
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        }
+
+        // GLOBALS
+        let SESSION_TOKEN = null;
+        let USER_EMAIL = null;
+        let PRE_AUTH_TOKEN = null; // HIGH-01 FIX: Required for MFA binding
+        let currentTheme = localStorage.getItem('cfpilot-theme') || 'light';
+        let allMessages = []; // Store all messages for search
+        let currentThread = 'main';
+        let fullscreenChartInstance = null;
+
+        // --- THEME MANAGEMENT ---
+        function initTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeIcon();
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('cfpilot-theme', currentTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const icon = document.querySelector('#theme-toggle i');
+
+            if (currentTheme === 'dark') {
+                icon.className = 'fas fa-sun';
+            }
+
+            else {
+                icon.className = 'fas fa-moon';
+            }
+        }
+
+        // --- SEARCH FUNCTIONALITY ---
+        function toggleSearch() {
+            const container = document.getElementById('search-container');
+            const input = document.getElementById('search-input');
+            container.classList.toggle('active');
+
+            if (container.classList.contains('active')) {
+                input.focus();
+            }
+
+            else {
+                input.value = '';
+                clearSearchHighlights();
+            }
+        }
+
+        function closeSearch() {
+            document.getElementById('search-container').classList.remove('active');
+            document.getElementById('search-input').value = '';
+            clearSearchHighlights();
+        }
+
+        function searchMessages(query) {
+            clearSearchHighlights();
+            if (!query) return;
+
+            const messages = document.querySelectorAll('.message');
+            let matchCount = 0;
+
+            messages.forEach(msg => {
+                const text = msg.textContent.toLowerCase();
+
+                if (text.includes(query.toLowerCase())) {
+                    msg.style.backgroundColor = 'rgba(99, 102, 241, 0.1)';
+                    msg.style.border = '2px solid var(--primary-color)';
+                    matchCount++;
+                }
+            });
+
+            if (matchCount === 0) {
+                showToast('No matches found', 'info');
+            }
+
+            else {
+                showToast(`Found ${matchCount} match${matchCount > 1 ? 'es' : ''}`, 'success');
+            }
+        }
+
+        function clearSearchHighlights() {
+            document.querySelectorAll('.message').forEach(msg => {
+                msg.style.backgroundColor = '';
+                msg.style.border = '';
+            });
+        }
+
+        // --- KEYBOARD SHORTCUTS ---
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+
+                // Ctrl/Cmd + K - Focus input
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    document.getElementById('user-input').focus();
+                }
+
+                // Ctrl/Cmd + L - Clear chat
+                if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                    e.preventDefault();
+                    document.getElementById('clear-btn').click();
+                }
+
+                // Ctrl/Cmd + F - Search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    toggleSearch();
+                }
+
+                // Esc - Close modals/search
+                if (e.key === 'Escape') {
+                    closeSearch();
+                    closeChartModal();
+                }
+            });
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = ` position: fixed;
+            top: 80px;
+            right: 20px;
+
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#6366f1'
+                }
+
+            ;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            z-index: 4000;
+            animation: slideInRight 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }
+
+                , 3000);
+        }
+
+        // --- CHART INTERACTIONS ---
+        function openChartFullscreen(chartConfig, canvasId) {
+            const modal = document.getElementById('chart-modal');
+            modal.classList.add('active');
+
+            // Destroy previous instance if exists
+            if (fullscreenChartInstance) {
+                fullscreenChartInstance.destroy();
+            }
+
+            // Clone the chart config and render in fullscreen
+            setTimeout(() => {
+                const ctx = document.getElementById('fullscreen-chart').getContext('2d');
+                fullscreenChartInstance = new Chart(ctx, chartConfig);
+            }
+
+                , 100);
+        }
+
+        function closeChartModal() {
+            const modal = document.getElementById('chart-modal');
+            modal.classList.remove('active');
+
+            if (fullscreenChartInstance) {
+                fullscreenChartInstance.destroy();
+                fullscreenChartInstance = null;
+            }
+        }
+
+        function exportChartAsImage(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const link = document.createElement('a');
+
+            link.download = `chart-${Date.now()
+                }
+
+            .png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('Chart exported successfully!', 'success');
+        }
+
+        // --- UTILITY FUNCTIONS ---
+        function formatTimestamp(date = new Date()) {
+
+            // Show actual system date and time
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function copyToClipboard(index) {
+            // Get the message element from DOM
+            const msgRow = document.querySelector(`.msg-row[data-index="${index}"]`);
+
+            if (!msgRow) {
+                showToast('Message not found', 'error');
+                return;
+            }
+
+            // Get the message div and clone it to extract text
+            const messageDiv = msgRow.querySelector('.message');
+
+            if (!messageDiv) {
+                showToast('Message content not found', 'error');
+                return;
+            }
+
+            // Clone the message to avoid modifying the original
+            const clone = messageDiv.cloneNode(true);
+
+            // Remove timestamp and action buttons from the clone
+            const timestamp = clone.querySelector('.timestamp');
+            const actions = clone.querySelector('.message-actions');
+            if (timestamp) timestamp.remove();
+            if (actions) actions.remove();
+
+            // Get the text content
+            const textToCopy = clone.innerText.trim();
+
+            // Use clipboard API with fallback
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('Copied to clipboard!', 'success');
+
+                }).catch((err) => {
+                    console.error('Clipboard error:', err);
+                    // Fallback method
+                    fallbackCopyToClipboard(textToCopy);
+                });
+            }
+
+            else {
+                // Fallback for older browsers
+                fallbackCopyToClipboard(textToCopy);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+
+                if (successful) {
+                    showToast('Copied to clipboard!', 'success');
+                }
+
+                else {
+                    showToast('Failed to copy', 'error');
+                }
+            }
+
+            catch (err) {
+                console.error('Fallback copy failed:', err);
+                showToast('Copy failed', 'error');
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        // Initialize on load
+        initTheme();
+        setupKeyboardShortcuts();
+
+        // --- CONFIGURABLE API BASE URL ---
+        // Change this for production deployment
+        const API_BASE_URL = "";
+
+        // --- 1. UI LOGIC (Input & Animations) ---
+        const textarea = document.getElementById('user-input');
+
+        // Auto-expand textarea
+        textarea.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.value === '') this.style.height = 'auto';
+        });
+
+        // Handle Enter (Send) vs Shift+Enter (NewLine)
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!isChatWaiting) document.getElementById('send-btn').click();
+            }
+        });
+
+        function fillInput(text) {
+            textarea.value = text;
+            textarea.focus();
+            textarea.dispatchEvent(new Event('input')); // Trigger resize
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Typing Indicator Helpers
+        function showTypingIndicator() {
+            const div = document.createElement('div');
+            div.className = 'msg-row bot typing';
+            div.id = 'typing-indicator';
+            div.innerHTML = ` <div class="avatar"><i class="fas fa-robot"></i></div><div class="message" style="padding: 8px 16px;"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+            document.getElementById('chat-container').appendChild(div);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typing-indicator');
+            if (el) el.remove();
+        }
+
+        // --- 2. AUTH NAVIGATION ---
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            }
+
+            else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
+        function switchView(viewName) {
+            // Hide all auth views
+            ['view-login', 'view-signup', 'view-mfa', 'view-forgot-password'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            // Clear all message boxes
+            ['login-error', 'signup-msg', 'forgot-msg', 'mfa-error'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.innerText = ''; el.className = 'error-msg'; }
+            });
+            const target = document.getElementById('view-' + viewName);
+            if (target) target.classList.remove('hidden');
+        }
+
+        // --- 3. BACKEND CALLS ---
+        // Friendly error messages keyed by HTTP status code
+        const HTTP_ERROR_MESSAGES = {
+            400: "Invalid request — please check your input and try again.",
+            401: "Your session has expired. Please refresh the page and log in again.",
+            403: "You don't have permission to perform this action.",
+            422: "Invalid request format. Please try again.",
+            429: null, // handled dynamically with retry-after
+            500: "Something went wrong on our end. Please try again in a moment.",
+            502: "Service temporarily unavailable. Please try again shortly.",
+            503: "Service temporarily unavailable. Please try again shortly.",
+        };
+
+        function getFriendlyError(status, retryAfter) {
+            if (status === 429) {
+                if (retryAfter) {
+                    const secs = parseInt(retryAfter, 10);
+                    if (!isNaN(secs)) {
+                        const mins = Math.ceil(secs / 60);
+                        return mins >= 2
+                            ? `You've sent too many requests. Please wait ${mins} minutes before trying again.`
+                            : `You've sent too many requests. Please wait ${secs} seconds before trying again.`;
+                    }
+                }
+                return "You've sent too many requests. Please wait a moment before trying again.";
+            }
+            return HTTP_ERROR_MESSAGES[status] || `Unexpected error (${status}). Please try again.`;
+        }
+
+        async function sendToBackend(endpoint, data) {
+            // Fix CF-03: Token sent in Authorization Bearer header, NOT in request body
+            try {
+                const res = await fetch(`${API_BASE_URL}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SESSION_TOKEN}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                // Return status-aware error objects for non-2xx responses
+                if (!res.ok) {
+                    const retryAfter = res.headers.get('Retry-After');
+                    const friendlyMsg = getFriendlyError(res.status, retryAfter);
+                    return { _error: true, _status: res.status, response: friendlyMsg };
+                }
+
+                return await res.json();
+            } catch (e) {
+                return { _error: true, _status: 0, response: "Could not reach the server. Please check your connection." };
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errBox = document.getElementById('login-error');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+
+                    ,
+                    body: JSON.stringify({
+                        email, password
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    USER_EMAIL = email;
+                    PRE_AUTH_TOKEN = data.pre_auth_token; // HIGH-01 FIX: Store token for Step 2
+
+                    // Security Fix: Login does NOT return QR code anymore.
+                    // Just switch to MFA view for verification.
+                    document.querySelector('#view-mfa h3').innerText = "2-Step Verification";
+                    document.querySelector('#view-mfa p').innerText = "Enter the code from your Authenticator App.";
+                    document.getElementById('qr-image').style.display = 'none'; // Hide QR image container
+
+                    switchView('mfa');
+                }
+
+                else {
+                    errBox.innerText = data.message;
+                }
+            }
+
+            catch (e) {
+                errBox.innerText = "Connection Failed";
+            }
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('reg-name').value.trim();
+            const company = document.getElementById('reg-company').value;
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const msgBox = document.getElementById('signup-msg');
+
+            // --- Client-side validation (fast feedback before hitting the server) ---
+            msgBox.className = 'error-msg';
+            if (!name) { msgBox.innerText = 'Full Name is required.'; return; }
+            if (!company) { msgBox.innerText = 'Please select your Company.'; return; }
+            if (!email) { msgBox.innerText = 'Email is required.'; return; }
+            if (!password) { msgBox.innerText = 'Password is required.'; return; }
+            if (password.length < 12) { msgBox.innerText = 'Password must be at least 12 characters.'; return; }
+            if (!/[A-Z]/.test(password)) { msgBox.innerText = 'Password must contain at least one uppercase letter.'; return; }
+            if (!/[a-z]/.test(password)) { msgBox.innerText = 'Password must contain at least one lowercase letter.'; return; }
+            if (!/[0-9]/.test(password)) { msgBox.innerText = 'Password must contain at least one number.'; return; }
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) { msgBox.innerText = 'Password must contain at least one special character (!@#$%^&*...).'; return; }
+
+            msgBox.innerText = 'Creating account...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, company, email, password })
+                });
+                const data = await res.json();
+
+                // Handle HTTP 422 Pydantic validation errors
+                if (res.status === 422) {
+                    const details = data.detail || [];
+                    const messages = details.map(d => {
+                        // Pydantic v2 puts the human message in ctx.error or the msg field
+                        return d.ctx?.error || d.msg || 'Validation error';
+                    });
+                    msgBox.innerText = messages.join(' | ') || 'Validation failed. Please check your inputs.';
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    if (data.qr_code) {
+                        msgBox.className = 'success-msg';
+                        msgBox.innerText = 'Account Created! Setting up MFA...';
+                        PRE_AUTH_TOKEN = data.pre_auth_token;
+                        document.getElementById('view-signup').classList.add('hidden');
+                        document.getElementById('view-mfa').classList.remove('hidden');
+                        document.querySelector('#view-mfa h3').innerText = 'Setup 2FA';
+                        document.querySelector('#view-mfa p').innerText = 'Scan this QR code with your Authenticator App, then enter the 6-digit code below.';
+                        document.getElementById('qr-image').src = 'data:image/png;base64,' + data.qr_code;
+                        document.getElementById('qr-image').style.display = 'block';
+                        USER_EMAIL = email;
+                    } else {
+                        msgBox.className = 'success-msg';
+                        msgBox.innerText = 'Signup Successful! Please log in.';
+                        setTimeout(() => switchView('login'), 1500);
+                    }
+                } else {
+                    msgBox.innerText = data.message || 'An error occurred. Please try again.';
+                }
+            } catch (e) {
+                msgBox.innerText = 'Network error — could not reach the server.';
+            }
+        }
+
+        async function handleMFA() {
+            const code = document.getElementById('mfa-code').value.trim();
+            const errBox = document.getElementById('mfa-error');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/verify_mfa`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: USER_EMAIL,
+                        code: code,
+                        pre_auth_token: PRE_AUTH_TOKEN
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    SESSION_TOKEN = data.token;
+                    document.getElementById('login-overlay').classList.add('hidden');
+
+                    // Check if this is the admin user
+                    const ADMIN_EMAIL = 'itintern1@tatachemicals.com';
+                    if (USER_EMAIL && USER_EMAIL.toLowerCase() === ADMIN_EMAIL) {
+                        // Show dashboard button in header
+                        document.getElementById('admin-dash-btn').classList.remove('hidden');
+                        // Show admin dashboard view initially
+                        document.getElementById('admin-view').classList.remove('hidden');
+                        loadAdminDashboard();
+                    } else {
+                        document.getElementById('admin-dash-btn').classList.add('hidden');
+                        loadChatHistory();
+                    }
+                } else {
+                    errBox.innerText = data.message || 'Invalid MFA code.';
+                }
+            } catch (e) {
+                errBox.innerText = 'Verification failed — connection error.';
+            }
+        }
+
+        // --- FORGOT PASSWORD (MFA RESET) ---
+        async function handleResetPasswordMfa() {
+            const email = document.getElementById('forgot-email').value.trim();
+            const mfaCode = document.getElementById('forgot-mfa-code').value.trim();
+            const password = document.getElementById('forgot-new-password').value;
+            const confirm = document.getElementById('forgot-new-password-confirm').value;
+            const msgBox = document.getElementById('forgot-msg');
+
+            msgBox.className = 'error-msg';
+
+            if (!email) { msgBox.innerText = 'Please enter your email address.'; return; }
+            if (!mfaCode) { msgBox.innerText = 'Please enter the 6-digit Authenticator code.'; return; }
+            if (!password) { msgBox.innerText = 'Please enter a new password.'; return; }
+            if (password !== confirm) { msgBox.innerText = 'Passwords do not match.'; return; }
+            if (password.length < 12) { msgBox.innerText = 'Password must be at least 12 characters.'; return; }
+            if (!/[A-Z]/.test(password)) { msgBox.innerText = 'Password must contain at least one uppercase letter.'; return; }
+            if (!/[a-z]/.test(password)) { msgBox.innerText = 'Password must contain at least one lowercase letter.'; return; }
+            if (!/[0-9]/.test(password)) { msgBox.innerText = 'Password must contain at least one number.'; return; }
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) { msgBox.innerText = 'Password must contain at least one special character.'; return; }
+
+            msgBox.innerText = 'Resetting password...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/reset-password-mfa`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, mfa_code: mfaCode, new_password: password })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    msgBox.className = 'success-msg';
+                    msgBox.innerText = data.message;
+                    setTimeout(() => {
+                        document.getElementById('forgot-email').value = '';
+                        document.getElementById('forgot-mfa-code').value = '';
+                        document.getElementById('forgot-new-password').value = '';
+                        document.getElementById('forgot-new-password-confirm').value = '';
+                        switchView('login');
+                    }, 2000);
+                } else {
+                    msgBox.className = 'error-msg';
+                    msgBox.innerText = data.message || 'Reset failed. Please verify your details.';
+                }
+            } catch (e) {
+                msgBox.className = 'error-msg';
+                msgBox.innerText = 'Could not reset password — connection error.';
+            }
+        }
+
+        // --- ADMIN DASHBOARD ---
+        async function loadAdminDashboard() {
+            // Load stats
+            try {
+                const res = await fetch(`${API_BASE_URL}/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${SESSION_TOKEN}` }
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const s = data.stats;
+                    document.getElementById('stat-total-users').innerText = s.total_users;
+                    document.getElementById('stat-mfa-enabled').innerText = s.mfa_enabled;
+                    document.getElementById('stat-chat-prompts').innerText = s.chat_prompts;
+                    document.getElementById('stat-ppt-generations').innerText = s.ppt_generations;
+                    document.getElementById('stat-recent-signups').innerText = s.recent_signups;
+                }
+            } catch (e) { console.error('Admin stats error:', e); }
+
+            // Load logs
+            try {
+                const res = await fetch(`${API_BASE_URL}/admin/logs`, {
+                    headers: { 'Authorization': `Bearer ${SESSION_TOKEN}` }
+                });
+                const data = await res.json();
+                const logBody = document.getElementById('admin-logs-tbody');
+                if (data.status === 'success' && data.logs.length > 0) {
+                    logBody.innerHTML = '';
+                    data.logs.forEach(l => {
+                        const tr = document.createElement('tr');
+                        const tdTime = document.createElement('td');
+                        tdTime.style.cssText = 'font-size:0.8em;color:#64748b;white-space:nowrap;';
+                        tdTime.textContent = new Date(l.timestamp).toLocaleString();
+                        const tdEmail = document.createElement('td');
+                        tdEmail.style.cssText = 'font-family:monospace;font-size:0.85em;color:#a5b4fc;';
+                        tdEmail.textContent = l.email || '';
+                        const tdAction = document.createElement('td');
+                        const span = document.createElement('span');
+                        span.className = 'role-badge user';
+                        span.style.cssText = 'background:rgba(99,102,241,0.1);color:#818cf8;border:1px solid rgba(99,102,241,0.2);';
+                        span.textContent = l.action_type || '';
+                        tdAction.appendChild(span);
+                        const tdDetails = document.createElement('td');
+                        tdDetails.style.cssText = 'font-size:0.85em;color:#cbd5e1;max-width:300px;overflow:hidden;text-overflow:ellipsis;';
+                        tdDetails.title = l.details || '';
+                        tdDetails.textContent = l.details || '';
+                        tr.appendChild(tdTime); tr.appendChild(tdEmail); tr.appendChild(tdAction); tr.appendChild(tdDetails);
+                        logBody.appendChild(tr);
+                    });
+                }
+            } catch (e) { console.error('Admin logs error:', e); }
+
+            // Load users
+            try {
+                const res = await fetch(`${API_BASE_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${SESSION_TOKEN}` }
+                });
+                const data = await res.json();
+                const tbody = document.getElementById('admin-users-tbody');
+                if (data.status === 'success' && data.users.length > 0) {
+                    tbody.innerHTML = '';
+                    data.users.forEach(u => {
+                        const tr = document.createElement('tr');
+                        const tdEmail = document.createElement('td');
+                        tdEmail.style.cssText = 'color:#a5b4fc;font-family:monospace;font-size:0.85em;';
+                        tdEmail.textContent = u.email || '';
+                        const tdName = document.createElement('td');
+                        if (u.name) { tdName.textContent = u.name; } else { tdName.innerHTML = '<span style="color:#475569">-</span>'; }
+                        const tdCompany = document.createElement('td');
+                        tdCompany.textContent = u.company || '-';
+                        const tdRole = document.createElement('td');
+                        const roleSpan = document.createElement('span');
+                        const safeRole = /^[a-z_]+$/.test(u.role || '') ? u.role : 'user';
+                        roleSpan.className = `role-badge ${safeRole}`;
+                        roleSpan.textContent = safeRole;
+                        tdRole.appendChild(roleSpan);
+                        const tdMfa = document.createElement('td');
+                        const mfaSpan = document.createElement('span');
+                        mfaSpan.className = `mfa-badge ${u.mfa_enabled ? 'on' : 'off'}`;
+                        mfaSpan.textContent = u.mfa_enabled ? 'ON' : 'OFF';
+                        tdMfa.appendChild(mfaSpan);
+                        const tdFailed = document.createElement('td');
+                        tdFailed.style.color = u.failed_attempts > 0 ? '#f87171' : '#4ade80';
+                        tdFailed.textContent = (u.failed_attempts || 0) + (u.locked ? ' 🔒' : '');
+                        const tdChat = document.createElement('td');
+                        tdChat.style.cssText = 'text-align:center;font-weight:600;color:#818cf8;';
+                        tdChat.textContent = u.chat_count || 0;
+                        const tdPpt = document.createElement('td');
+                        tdPpt.style.cssText = 'text-align:center;font-weight:600;color:#f472b6;';
+                        tdPpt.textContent = u.ppt_count || 0;
+                        [tdEmail, tdName, tdCompany, tdRole, tdMfa, tdFailed, tdChat, tdPpt].forEach(td => tr.appendChild(td));
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#475569;padding:24px;">No users found.</td></tr>';
+                }
+            } catch (e) {
+                console.error('Admin users error:', e);
+                document.getElementById('admin-users-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#f87171;padding:24px;">Failed to load users.</td></tr>';
+            }
+        }
+
+        function adminEnterChat() {
+            document.getElementById('admin-view').classList.add('hidden');
+            if (document.getElementById('chat-container').children.length <= 1) {
+                loadChatHistory();
+            }
+        }
+
+        function showAdminDashboard() {
+            loadAdminDashboard();
+            document.getElementById('admin-view').classList.remove('hidden');
+        }
+
+        function handleAdminLogout() {
+            SESSION_TOKEN = null;
+            USER_EMAIL = null;
+            document.getElementById('admin-dash-btn').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('login-overlay').classList.remove('hidden');
+            switchView('login');
+        }
+
+
+
+        async function loadChatHistory() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/chat/history`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SESSION_TOKEN}`
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+
+                if (data.status === 'success' && data.history.length > 0) {
+                    data.history.forEach(item => {
+                        const senderRole = item.sender === 'user' ? 'user' : 'bot';
+                        // Pass charts list and timestamp if present
+                        addMessage(item.text, senderRole, item.charts || [], item.timestamp);
+                    });
+                    scrollToBottom();
+                }
+
+                else {
+                    // Show suggestions if no history
+                    document.getElementById('suggestions').classList.remove('hidden');
+                    addMessage(`** Welcome! ** I am your Data Assistant.Try "Scanning" the dashboard to start.`, 'bot');
+                }
+            }
+
+            catch (e) {
+                console.error("History Error", e);
+            }
+        }
+
+        // --- 4. CHAT RENDERING ---
+        function addMessage(text, sender, chartsList = [], timestampStr = null) {
+            const container = document.getElementById('chat-container');
+            const suggestions = document.getElementById('suggestions');
+
+            // Hide suggestions once chat starts (if user sends message)
+            if (suggestions && sender === 'user') suggestions.classList.add('hidden');
+
+            const div = document.createElement('div');
+            const msgIndex = allMessages.length;
+
+            div.className = `msg-row ${sender}`;
+            // Fix: SQLite returns UTC timestamps without timezone indicator
+            // We need to explicitly parse as UTC to avoid timezone shift
+            let messageDate;
+
+            if (timestampStr) {
+                // If timestamp doesn't end with 'Z', it's from SQLite (UTC without indicator)
+                // Add 'Z' to explicitly mark it as UTC, or replace space with 'T' and add 'Z'
+                const utcTimestamp = timestampStr.includes('T') ? timestampStr : timestampStr.replace(' ', 'T') + 'Z';
+                messageDate = new Date(utcTimestamp);
+            }
+
+            else {
+                messageDate = new Date();
+            }
+
+            div.dataset.timestamp = messageDate.toISOString();
+            div.dataset.index = msgIndex;
+
+            // Avatar Logic
+            const icon = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+
+            const avatarHtml = `<div class="avatar">${icon}</div>`;
+
+            let contentHtml = "";
+
+            // If legacy chart data passed (single object), wrap in list
+            if (chartsList && !Array.isArray(chartsList)) chartsList = [chartsList];
+
+            let chartsToRender = chartsList || [];
+
+            // Legacy Regex Fallback (in case backend sends mixed text or old history format)
+            if (sender === 'bot') {
+
+                // More robust regex for JSON objects containing chart keys
+                const chartPattern = /\{(?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*\}/g;
+                let matches = [...text.matchAll(chartPattern)];
+
+                matches.forEach(match => {
+                    const jsonStr = match[0];
+
+                    // Case-insensitive check for chart keys
+                    if (/"(chart_type|type|Chart_Type|Type)" /i.test(jsonStr) && /"(data|Data)" /i.test(jsonStr)) {
+                        try {
+                            const parsed = JSON.parse(jsonStr);
+
+                            // Normalize keys to lowercase for checking
+                            const keysLower = {};
+                            for (let k in parsed) { keysLower[k.toLowerCase()] = k; }
+                            if ((keysLower['chart_type'] || keysLower['type']) && keysLower['data']) {
+                                const normalized = {
+                                    chart_type: parsed[keysLower['chart_type']] || parsed[keysLower['type']],
+                                    data: parsed[keysLower['data']],
+                                    title: parsed[keysLower['title']] || 'Chart',
+                                    x_axis: parsed[keysLower['x_axis']] || '',
+                                    y_axis: parsed[keysLower['y_axis']] || ''
+                                };
+
+                                if (!chartsToRender.some(c => JSON.stringify(c) === JSON.stringify(normalized))) {
+                                    chartsToRender.push(normalized);
+                                }
+
+                                text = text.replace(jsonStr, "").trim();
+                                console.log('📊 Chart extracted via enhanced regex fallback (case-insensitive)');
+                            }
+                        }
+
+                        catch (e) {
+                            // Not a valid chart JSON, ignore
+                        }
+                    }
+                });
+            }
+
+            if (chartsToRender.length > 0 && sender === 'bot') {
+                try {
+                    console.log(`📊 Bot response contains ${chartsToRender.length
+                        }
+
+            charts.Starting render sequence...`);
+
+                    if (text) contentHtml += DOMPurify.sanitize(marked.parse(text));
+
+                    const chartIDs = [];
+
+                    chartsToRender.forEach((chart, index) => {
+                        const canvasId = "chart-" + Math.random().toString(36).substr(2, 9);
+                        // Add chart with action buttons
+                        contentHtml += `<div class="chart-container"><div class="chart-actions"><button class="chart-action-btn" onclick="openChartFullscreen(chartConfigs['${canvasId}'], '${canvasId}')" title="Fullscreen"><i class="fas fa-expand"></i></button><button class="chart-action-btn" onclick="exportChartAsImage('${canvasId}')" title="Export"><i class="fas fa-download"></i></button></div><div id="loader-${canvasId}" style="color: #94a3b8; font-size: 0.85em;"><i class="fas fa-chart-bar"></i> Loading visualization...</div><canvas id="${canvasId}" style="display:none;"></canvas></div>`;
+
+                        chartIDs.push({
+                            id: canvasId, data: chart
+                        });
+                    });
+
+                    // Add timestamp
+                    const timestamp = `<span class="timestamp">${formatTimestamp(messageDate)}</span>`;
+
+                    // Add action buttons
+                    const actionsHtml = `<div class="message-actions"><button class="msg-action-btn" onclick="copyToClipboard(${msgIndex})"><i class="fas fa-copy"></i>Copy</button><button class="msg-action-btn" onclick="regenerateResponse(this)"><i class="fas fa-redo"></i>Regenerate</button></div>`;
+
+                    div.innerHTML = `${avatarHtml} <div class="message">${contentHtml}${timestamp}${actionsHtml}</div>`;
+                    container.appendChild(div);
+
+                    // ✅ Render charts with a slight delay for DOM stability
+                    setTimeout(() => {
+                        chartIDs.forEach(item => {
+                            try {
+                                console.log("🎨 Attempting to render chart:", item.id);
+                                const canvas = document.getElementById(item.id);
+
+                                const loader = document.getElementById(`loader-${item.id}`);
+                                const chartConfig = renderChart(item.id, item.data);
+                                if (!window.chartConfigs) window.chartConfigs = {};
+                                window.chartConfigs[item.id] = chartConfig;
+
+                                if (canvas) canvas.style.display = 'block';
+                                if (loader) loader.style.display = 'none';
+                                console.log("✅ Successfully called renderChart for:", item.id);
+                            }
+
+                            catch (err) {
+                                console.error(`❌ Partial Chart Error(${item.id
+                                    }): `, err);
+
+                                const loader = document.getElementById(`loader-${item.id}`);
+                                // Finding #11: use textContent — immune to HTML injection by design
+                                if (loader) { loader.textContent = ""; const span = document.createElement("span"); span.style.color = "#ef4444"; span.textContent = "Failed to render chart: " + err.message; loader.appendChild(span); }
+                            }
+                        });
+                    }
+
+                        , 300);
+                }
+
+                catch (e) {
+                    console.error("❌ High-level Chart rendering error:", e);
+
+                    const timestamp = `<span class="timestamp">${formatTimestamp(messageDate)}</span>`;
+
+                    // Finding #11: sanitize e.message before injecting into DOM
+                    const safeErrMsg = DOMPurify.sanitize(String(e.message));
+                    // Render markdown for text + append error visually
+                    // Sanitize user-provided HTML logic while preserving markdown formatting
+                    const textWithLiteralTags = text.replace(/<\/?\s*[a-zA-Z][^>]*>/g, m => m.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                    div.innerHTML = `${avatarHtml}<div class="message">${DOMPurify.sanitize(marked.parse(textWithLiteralTags))}<div style="color:#ef4444; font-size:0.8em; margin-top:10px; border-top:1px solid #fee2e2; padding-top:5px;"><i class="fas fa-bug"></i><strong>Visualization Error:</strong>${safeErrMsg}</div>${timestamp}<div class="message-actions"><button class="msg-action-btn" onclick="copyToClipboard(${msgIndex})"><i class="fas fa-copy"></i>Copy </button></div></div>`;
+                    container.appendChild(div);
+                }
+            }
+
+            else {
+
+                // Collapsible Scan Results Logic
+                if ((text.includes("Analyzed") && text.includes("sheets")) || text.includes("DASHBOARD METADATA")) {
+                    const parts = text.split(":"); // Simple split at first colon
+                    const header = parts[0] + (parts.length > 1 ? ":" : "");
+                    const body = text.substring(header.length); // The list content
+
+                    const headerWithLiteralTags = header.replace(/<\/?\s*[a-zA-Z][^>]*>/g, m => m.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                    const bodyWithLiteralTags = body.replace(/<\/?\s*[a-zA-Z][^>]*>/g, m => m.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                    contentHtml = `<div>${DOMPurify.sanitize(marked.parse(headerWithLiteralTags))}</div><details><summary>View Technical Metadata</summary><div>${DOMPurify.sanitize(marked.parse(bodyWithLiteralTags))}</div></details>`;
+                }
+
+                else if (text.startsWith('__PPT_DOWNLOAD__')) {
+                    // Reconstruct PPT download card from saved history marker
+                    const afterPrefix = text.replace('__PPT_DOWNLOAD__', '');
+                    const slidesIdx = afterPrefix.indexOf('__SLIDES__');
+                    const nameIdx = afterPrefix.indexOf('__NAME__');
+                    const savedUrl = slidesIdx > -1 ? afterPrefix.substring(0, slidesIdx) : afterPrefix;
+                    const savedSlides = slidesIdx > -1 ? (nameIdx > -1 ? afterPrefix.substring(slidesIdx + 10, nameIdx) : afterPrefix.substring(slidesIdx + 10)) : '?';
+                    const savedFileName = nameIdx > -1 ? afterPrefix.substring(nameIdx + 8) : 'CFPilot_Presentation.pptx';
+                    contentHtml = `<span>Your presentation has been generated! Click below to download your deck.</span>
+                        <div style="margin-top:10px;padding:12px 16px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(16,185,129,0.08));border:1px solid rgba(99,102,241,0.25);border-radius:10px;">
+                            <div style="font-weight:600;font-size:0.95em;margin-bottom:6px;">&#127881; Your presentation is ready!</div>
+                            <div style="font-size:0.82em;color:var(--text-secondary);margin-bottom:10px;">${escapeHtml(savedSlides)} slides generated</div>
+                            <a href="${escapeHtml(savedUrl)}" download="${escapeHtml(savedFileName)}"
+                               onclick="(function(e, url, name) {
+                                   e.preventDefault();
+                                   const a = document.createElement('a');
+                                   a.href = url; a.download = name;
+                                   document.body.appendChild(a); a.click();
+                                   setTimeout(() => a.remove(), 500);
+                                   // Check after a moment if it 404'd
+                                   fetch(url, {method:'HEAD'}).then(r => {
+                                       if (!r.ok) showToast('This file has expired. Please regenerate the presentation.', 'error');
+                                   }).catch(() => {});
+                               })(event, '${escapeHtml(savedUrl)}', '${escapeHtml(savedFileName)}')"
+                               style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--primary-color);color:white;border-radius:8px;text-decoration:none;font-size:0.87em;font-weight:600;">
+                                <i class="fas fa-file-powerpoint"></i> Download ${escapeHtml(savedFileName)}
+                            </a>
+                        </div>`;
+                }
+
+                else {
+                    const textWithLiteralTags = text.replace(/<\/?\s*[a-zA-Z][^>]*>/g, m => m.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+                    contentHtml = DOMPurify.sanitize(marked.parse(textWithLiteralTags));
+                }
+
+                // Add timestamp
+                const timestamp = `<span class="timestamp">${formatTimestamp(messageDate)}</span>`;
+
+                // Add action buttons
+                const actionsHtml = `<div class="message-actions"><button class="msg-action-btn" onclick="copyToClipboard(${msgIndex})"><i class="fas fa-copy"></i>Copy</button>${sender === 'bot' ? `<button class="msg-action-btn" onclick="regenerateResponse(this)"><i class="fas fa-redo"></i>Regenerate</button>` : ''}</div>`;
+
+                if (sender === 'user') {
+                    // Finding #11: user input must never be parsed as HTML/markdown
+                    const safeUserContent = escapeHtml(text);
+                    div.innerHTML = `<div class="message">${safeUserContent}${timestamp}${actionsHtml}</div>${avatarHtml}`;
+                }
+
+                else {
+                    div.innerHTML = `${avatarHtml} <div class="message">${contentHtml}${timestamp}${actionsHtml}</div>`;
+                }
+
+                container.appendChild(div);
+            }
+
+            // Store message for search
+            allMessages.push({
+                text, sender, timestamp: messageDate
+            });
+
+            scrollToBottom();
+        }
+
+        function renderChart(canvasId, chartConfig) {
+            const canvas = document.getElementById(canvasId);
+
+            if (!canvas) {
+                console.error("Canvas not found:", canvasId);
+                return null;
+            }
+
+            const ctx = canvas.getContext('2d');
+
+            console.log("📊 Rendering chart with config:", chartConfig);
+
+            // ✅ FIX: Create case-insensitive key lookup
+            const keysLower = {};
+            for (let k in chartConfig) { keysLower[k.toLowerCase()] = k; }
+
+            // ✅ FIX: Map backend's "chart_type" or "type" to Chart.js "type" (case-insensitive)
+            const chartTypeKey = keysLower['chart_type'] || keysLower['type'];
+            const chartType = chartTypeKey ? chartConfig[chartTypeKey] : 'bar';
+
+            // --- DATA TRANSFORMATION LOGIC ---
+            let labels = [];
+            let values = [];
+
+            // Get data using case-insensitive lookup
+            const dataKey = keysLower['data'];
+
+            if (!dataKey) {
+                console.error("No data in chart config. Keys present:", Object.keys(chartConfig));
+                return null;
+            }
+
+            const data = chartConfig[dataKey];
+
+            console.log('📊 Chart type:', chartType, '| Data type:', typeof data, '| Is array:', Array.isArray(data));
+
+            // CASE 1: Backend sends standard Chart.js structure { labels: [], datasets: [] }
+            if (data.labels && data.datasets) {
+                console.log("✅ Using Chart.js native format");
+
+                const config = {
+                    ...chartConfig,
+                    type: chartType
+                }
+
+                    ;
+                new Chart(ctx, config);
+                return config;
+            }
+
+            // CASE 2: Backend sends { labels: [], values: [] }
+            if (data.labels && data.values) {
+                console.log("✅ Using labels/values format");
+                labels = data.labels;
+                values = data.values;
+            }
+
+            // CASE 3: Backend sends array of objects [ {label: "A", value: 10}, ... ]
+            else if (Array.isArray(data)) {
+                console.log("✅ Processing array of objects, length:", data.length);
+
+                if (data.length > 0) {
+                    const firstRow = data[0];
+                    console.log("First data row:", firstRow);
+
+                    // ✅ FIX 2: Check for "label" and "value" keys FIRST (our standard format)
+                    if ('label' in firstRow && 'value' in firstRow) {
+                        labels = chartConfig.data.map(row => row.label);
+                        values = chartConfig.data.map(row => row.value);
+                        console.log("✅ Extracted using 'label'/'value' keys");
+                    }
+
+                    else {
+                        // Fallback: Auto-detect by type
+                        const keys = Object.keys(firstRow);
+                        let labelKey = keys.find(k => typeof firstRow[k] === 'string');
+                        let valueKey = keys.find(k => typeof firstRow[k] === 'number');
+
+                        // Last resort fallback
+                        if (!labelKey) labelKey = keys[0];
+                        if (!valueKey) valueKey = keys[1] || keys[0];
+
+                        console.log("✅ Auto-detected keys:", {
+                            labelKey, valueKey
+                        });
+
+                        labels = data.map(row => row[labelKey]);
+                        values = data.map(row => row[valueKey]);
+                    }
+                }
+            }
+
+            console.log("Final chart data:", {
+                labels, values, chartType
+            });
+
+            // ✅ Validate we have data
+            if (labels.length === 0 || values.length === 0) {
+                console.error("❌ No valid labels/values extracted");
+                return null;
+            }
+
+            // ✅ Render the chart
+            const finalConfig = {
+
+                type: chartType,
+                data: {
+
+                    labels: labels,
+                    datasets: [{
+                        label: keysLower['title'] ? chartConfig[keysLower['title']] : 'Data',
+                        data: values,
+                        backgroundColor: chartType === 'line' ? 'rgba(99, 102, 241, 0.2)' : ['rgba(99, 102, 241, 0.7)', 'rgba(16, 185, 129, 0.7)',
+                            'rgba(245, 158, 11, 0.7)', 'rgba(239, 68, 68, 0.7)',
+                            'rgba(139, 92, 246, 0.7)', 'rgba(236, 72, 153, 0.7)',
+                            'rgba(14, 165, 233, 0.7)', 'rgba(34, 197, 94, 0.7)'
+                        ],
+                        borderColor: chartType === 'line' ? 'rgba(99, 102, 241, 1)' : ['rgba(99, 102, 241, 1)', 'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)', 'rgba(239, 68, 68, 1)',
+                            'rgba(139, 92, 246, 1)', 'rgba(236, 72, 153, 1)',
+                            'rgba(14, 165, 233, 1)', 'rgba(34, 197, 94, 1)'
+                        ],
+                        borderWidth: chartType === 'line' ? 2 : 1,
+                        fill: chartType === 'line' ? true : false,
+                        tension: chartType === 'line' ? 0.4 : 0
+                    }
+
+                    ]
+                }
+
+                ,
+                options: {
+
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            display: chartType !== 'pie' && chartType !== 'doughnut'
+                        }
+
+                        ,
+                        title: {
+
+                            display: ! !(keysLower['title'] && chartConfig[keysLower['title']]),
+                            text: keysLower['title'] ? chartConfig[keysLower['title']] : '',
+                            font: {
+                                size: 14, weight: 'bold'
+                            }
+                        }
+                    }
+
+                    ,
+                    scales: chartType === 'line' || chartType === 'bar' ? {
+                        y: {
+
+                            beginAtZero: true,
+                            title: {
+                                display: ! !(keysLower['y_axis'] && chartConfig[keysLower['y_axis']]),
+                                text: keysLower['y_axis'] ? chartConfig[keysLower['y_axis']] : ''
+                            }
+                        }
+
+                        ,
+                        x: {
+                            title: {
+                                display: ! !(keysLower['x_axis'] && chartConfig[keysLower['x_axis']]),
+                                text: keysLower['x_axis'] ? chartConfig[keysLower['x_axis']] : ''
+                            }
+                        }
+                    }
+
+                        : {}
+                }
+            }
+
+                ;
+
+            new Chart(ctx, finalConfig);
+            console.log("✅ Chart rendered successfully");
+
+            return finalConfig;
+        }
+
+        // --- REGENERATE RESPONSE ---
+        function regenerateResponse(button) {
+            const msgRow = button.closest('.msg-row');
+            const prevUserMsg = msgRow.previousElementSibling;
+
+            if (prevUserMsg && prevUserMsg.classList.contains('user')) {
+                const userText = prevUserMsg.querySelector('.message').textContent.trim();
+                // Remove timestamp from text
+                const cleanText = userText.split('\n')[0];
+
+                // Remove the bot message
+                msgRow.remove();
+
+                // Resend the query
+                showTypingIndicator();
+
+                sendToBackend('chat', {
+                    message: cleanText
+
+                }).then(res => {
+                    removeTypingIndicator();
+                    addMessage(res.response, 'bot', res.charts || []);
+                });
+            }
+        }
+
+        // --- 5. EVENT LISTENERS ---
+        // Theme Toggle
+        document.getElementById('theme-toggle').onclick = toggleTheme;
+
+        // Search Toggle
+        document.getElementById('search-btn').onclick = toggleSearch;
+
+        // Search Input
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchMessages(e.target.value);
+        });
+
+        // --- 5. EVENT LISTENERS ---
+        document.getElementById('send-btn').onclick = async () => {
+            const txt = textarea.value.trim();
+            if (!txt || isChatWaiting) return;
+
+            isChatWaiting = true;
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            textarea.disabled = true;
+
+            addMessage(txt, 'user');
+            textarea.value = "";
+            textarea.style.height = 'auto'; // Reset height
+
+            showTypingIndicator(); // Show "..."
+
+            try {
+                const res = await sendToBackend('chat', {
+                    message: txt
+                });
+                removeTypingIndicator();
+                if (res._error) {
+                    addMessage('⚠️ ' + res.response, 'bot');
+                } else {
+                    addMessage(res.response, 'bot', res.charts || []);
+                }
+            } catch (e) {
+                removeTypingIndicator();
+                addMessage('⚠️ Could not reach the server. Please check your connection.', 'bot');
+            } finally {
+                isChatWaiting = false;
+                sendBtn.disabled = false;
+                textarea.disabled = false;
+                textarea.focus();
+            }
+        }
+
+            ;
+
+
+
+        // Clear History
+        document.getElementById('clear-btn').onclick = async () => {
+            if (!confirm("Delete all chat history?")) return;
+            document.getElementById('chat-container').innerHTML = '';
+
+            // Re-add suggestions
+            document.getElementById('chat-container').innerHTML = `<div id="suggestions"><div class="chip" onclick="fillInput('Summarize the dashboard')">🔍 Summarize Dashboard</div><div class="chip" onclick="fillInput('Total Leads')">📈 Total Leads</div><div class="chip" onclick="fillInput('Total Opportunities')">🏆 Total Opportunities</div></div>`;
+            document.getElementById('suggestions').classList.remove('hidden');
+
+            await fetch(`${API_BASE_URL}/chat/clear`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SESSION_TOKEN}`
+                },
+                body: JSON.stringify({})
+            });
+        }
+
+            ;
+
+        // Logout
+        document.getElementById('logout-btn').onclick = () => {
+            if (confirm("Log out?")) location.reload();
+        }
+
+            ;
+
+        // Voice
+        const micBtn = document.getElementById('mic-btn');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+
+            micBtn.onclick = () => {
+                if (micBtn.classList.contains('listening')) recognition.stop();
+                else recognition.start();
+            }
+
+                ;
+
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                textarea.placeholder = "Listening...";
+            }
+
+                ;
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+                textarea.placeholder = "Type or speak...";
+            }
+
+                ;
+
+            recognition.onresult = (e) => {
+                textarea.value = e.results[0][0].transcript;
+                textarea.dispatchEvent(new Event('input')); // trigger resize
+            }
+
+                ;
+        }
+
+        // PPT Voice
+        const pptMicBtn = document.getElementById('ppt-mic-btn');
+        const pptTextarea = document.getElementById('ppt-user-input');
+
+        if (SpeechRecognition && pptMicBtn) {
+            const pptRecognition = new SpeechRecognition();
+            pptRecognition.continuous = false;
+
+            pptMicBtn.onclick = () => {
+                if (pptMicBtn.classList.contains('listening')) pptRecognition.stop();
+                else pptRecognition.start();
+            }
+
+            pptRecognition.onstart = () => {
+                pptMicBtn.classList.add('listening');
+                pptTextarea.placeholder = "Listening...";
+            }
+
+            pptRecognition.onend = () => {
+                pptMicBtn.classList.remove('listening');
+                pptTextarea.placeholder = "Describe what you want in the deck...";
+            }
+
+            pptRecognition.onresult = (e) => {
+                pptTextarea.value = e.results[0][0].transcript;
+                pptTextarea.dispatchEvent(new Event('input'));
+            }
+        } else if (pptMicBtn) {
+            pptMicBtn.onclick = () => {
+                showToast('Voice input is not supported in this browser.', 'error');
+            }
+            pptMicBtn.style.opacity = '0.5';
+        }
+
+        else {
+
+            // Keep button visible but show error message when clicked
+            micBtn.onclick = () => {
+                showToast('Voice input is not supported in this browser/context. Please use HTTPS or a modern browser.', 'error');
+            }
+
+                ;
+            // Add visual indicator that voice is not available
+            micBtn.style.opacity = '0.5';
+            micBtn.title = 'Voice input not available (requires HTTPS and modern browser)';
+        }
+
+        // ─── PPT BUILDER ──────────────────────────────────────────────────
+        let pptSlides = [];
+        let pptGenerating = false;
+        let isChatWaiting = false;   // ← chatbot send-lock
+
+        // Wire PPT button
+        document.getElementById('ppt-btn').onclick = () => openPPTView();
+
+        function openPPTView() {
+            document.getElementById('ppt-view').classList.remove('hidden');
+            document.getElementById('ppt-user-input').focus();
+        }
+
+        function closePPTView() {
+            document.getElementById('ppt-view').classList.add('hidden');
+            // ✅ Always reset generating flag so the button is never stuck
+            pptGenerating = false;
+            // Reset all PPT state
+            pptSlides = [];
+            document.getElementById('ppt-slides-area').classList.add('hidden');
+            document.getElementById('ppt-slides-area').innerHTML = '';
+            // Reset proceed button to its default label (in case it was mid-download)
+            const proceedBtn = document.getElementById('ppt-proceed-btn');
+            proceedBtn.style.display = 'none';
+            proceedBtn.disabled = false;
+            proceedBtn.innerHTML = '<i class="fas fa-download"></i>&nbsp;Generate &amp; Download';
+            document.getElementById('ppt-user-input').value = '';
+            // Reset slide-count badge
+            const badge = document.getElementById('ppt-slide-count');
+            if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+            // Reset step indicators
+            const step1 = document.getElementById('ppt-step-1');
+            const step2 = document.getElementById('ppt-step-2');
+            const step3 = document.getElementById('ppt-step-3');
+            if (step1) { step1.style.background = 'var(--primary-color)'; step1.style.color = 'white'; step1.style.fontWeight = '600'; }
+            if (step2) { step2.style.background = 'var(--bg-secondary)'; step2.style.color = 'var(--text-secondary)'; step2.style.fontWeight = '500'; }
+            if (step3) { step3.style.background = 'var(--bg-secondary)'; step3.style.color = 'var(--text-secondary)'; step3.style.fontWeight = '500'; }
+            // Reset chat area — clear ALL children including any orphaned .ppt-loading divs
+            const chatArea = document.getElementById('ppt-chat-area');
+            chatArea.classList.add('no-slides');
+            chatArea.innerHTML = `<div class="ppt-welcome-msg"><strong>&#127912; Hi! I'm your Presentation Builder.</strong><br>Tell me what you'd like the deck to cover &mdash; I'll pull the data from Salesforce and build the slides automatically. You can keep refining with follow-up messages.<div class="ppt-chips"><span class="ppt-chip" onclick="pptFillInput('Full lead breakdown analysis')">&#128202; Lead Breakdown</span><span class="ppt-chip" onclick="pptFillInput('Opportunity pipeline summary')">&#127919; Pipeline Summary</span><span class="ppt-chip" onclick="pptFillInput('Billing and invoice analysis')">&#128176; Billing Analysis</span><span class="ppt-chip" onclick="pptFillInput('Actual vs target performance')">&#128200; Actual vs Target</span><span class="ppt-chip" onclick="pptFillInput('Customer visit and VOC analysis')">&#128506;&#65039; Visit Analysis</span></div></div>`;
+        }
+
+        function pptFillInput(text) {
+            document.getElementById('ppt-user-input').value = text;
+            document.getElementById('ppt-user-input').focus();
+        }
+
+        async function sendPPTPrompt() {
+            const input = document.getElementById('ppt-user-input');
+            const msg = input.value.trim();
+            if (!msg || pptGenerating) return;
+
+            // Debug: Check token state
+            console.log('PPT Request Debug:');
+            console.log('- SESSION_TOKEN exists:', !!SESSION_TOKEN);
+            console.log('- SESSION_TOKEN value:', SESSION_TOKEN ? SESSION_TOKEN.substring(0, 20) + '...' : 'null');
+            console.log('- API_BASE_URL:', API_BASE_URL);
+
+            pptGenerating = true;
+            input.disabled = true;
+            const pptSendBtn = document.getElementById('ppt-send-btn');
+            if (pptSendBtn) pptSendBtn.disabled = true;
+
+            input.value = '';
+            // Disable back button during generation
+            const pptBackBtn = document.querySelector('.ppt-header .back-btn');
+            if (pptBackBtn) { pptBackBtn.disabled = true; pptBackBtn.title = 'Please wait for generation to complete'; }
+            // ✅ Remove any leftover loader dots from a previous failed/aborted request
+            const chatArea = document.getElementById('ppt-chat-area');
+            chatArea.querySelectorAll('.ppt-loading').forEach(el => el.remove());
+
+            // Show loading state
+            const slidesArea = document.getElementById('ppt-slides-area');
+
+            chatArea.classList.remove('hidden');
+            slidesArea.classList.add('hidden');
+
+            // User bubble
+            const userBubble = document.createElement('div');
+            userBubble.style.cssText = 'align-self:flex-end;background:var(--user-bg);color:var(--user-text);padding:10px 14px;border-radius:12px;max-width:75%;font-size:0.9em;';
+            userBubble.textContent = msg;
+            chatArea.appendChild(userBubble);
+
+            // Loading indicator
+            const loader = document.createElement('div');
+            loader.className = 'ppt-loading';
+            loader.innerHTML = `<div class="ppt-loading-dot"></div><div class="ppt-loading-dot"></div><div class="ppt-loading-dot"></div><span>Building your presentation — fetching data &amp; generating slides...</span>`;
+            chatArea.appendChild(loader);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const controller = new AbortController();
+                const pptTimeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+                let res;
+                try {
+                    res = await fetch(`${API_BASE_URL}/ppt/plan`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${SESSION_TOKEN}`
+                        },
+                        body: JSON.stringify({ message: msg }),
+                        signal: controller.signal
+                    });
+                } finally {
+                    clearTimeout(pptTimeout);
+                }
+
+                // Debug: Log response status
+                console.log('PPT Response status:', res.status);
+
+                // Handle non-OK responses
+                if (!res.ok) {
+                    loader.remove();
+                    const retryAfter = res.headers.get('Retry-After');
+                    const friendlyMsg = getFriendlyError(res.status, retryAfter);
+                    const errBubble = document.createElement('div');
+                    errBubble.className = 'ppt-bot-bubble';
+                    errBubble.style.borderColor = 'rgba(239,68,68,0.3)';
+                    errBubble.style.color = '#ef4444';
+                    errBubble.textContent = '⚠️ ' + friendlyMsg;
+                    chatArea.appendChild(errBubble);
+                    pptGenerating = false;
+                    return;
+                }
+
+                const data = await res.json();
+                loader.remove();
+
+                if (data.status === 'success' && data.slides && data.slides.length > 0) {
+                    pptSlides = data.slides;
+                    chatArea.classList.remove('no-slides');
+                    const botBubble = document.createElement('div');
+                    botBubble.className = 'ppt-bot-bubble';
+                    botBubble.innerHTML = `<span style="font-size:1.1em;">&#127775;</span> Done! Generated <strong>${pptSlides.length} slides</strong>. Review &amp; edit below, then click <strong>Generate &amp; Download</strong> when ready.`;
+                    chatArea.appendChild(botBubble);
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                    renderPPTSlides();
+                    // Progress: activate step 2
+                    document.getElementById('ppt-step-1').style.background = 'rgba(99,102,241,0.2)';
+                    document.getElementById('ppt-step-1').style.color = 'var(--text-secondary)';
+                    document.getElementById('ppt-step-2').style.background = 'var(--primary-color)';
+                    document.getElementById('ppt-step-2').style.color = 'white';
+                    document.getElementById('ppt-step-2').style.fontWeight = '600';
+                }
+
+                else {
+                    const errBubble = document.createElement('div');
+                    errBubble.className = 'ppt-bot-bubble';
+                    errBubble.style.borderColor = 'rgba(239,68,68,0.3)';
+                    errBubble.style.color = '#ef4444';
+                    errBubble.innerHTML = '&#9888;&#65039; Couldn\'t generate the presentation. Please try a more specific prompt and try again.';
+                    chatArea.appendChild(errBubble);
+                }
+            }
+
+            catch (err) {
+                loader.remove();
+                console.error('PPT Plan error:', err);
+                const errBubble = document.createElement('div');
+                errBubble.className = 'ppt-welcome-msg';
+                errBubble.style.color = '#ef4444';
+                const isTimeout = err.name === 'AbortError';
+                errBubble.textContent = isTimeout
+                    ? '⏱️ Request timed out — the AI is taking too long. Please try a simpler prompt or try again.'
+                    : '⚠️ Network error — please check your connection and try again.';
+                chatArea.appendChild(errBubble);
+            }
+
+            pptGenerating = false;
+            // Re-enable input and send button
+            input.disabled = false;
+            if (pptSendBtn) pptSendBtn.disabled = false;
+            input.focus();
+
+            // Re-enable back button
+            const pptBackBtnEnd = document.querySelector('.ppt-header .back-btn');
+            if (pptBackBtnEnd) { pptBackBtnEnd.disabled = false; pptBackBtnEnd.title = ''; }
+        }
+
+        function renderPPTSlides() {
+            const slidesArea = document.getElementById('ppt-slides-area');
+            slidesArea.innerHTML = '';
+            slidesArea.classList.remove('hidden');
+            document.getElementById('ppt-proceed-btn').style.display = 'flex';
+            // Update slide-count badge
+            const badge = document.getElementById('ppt-slide-count');
+            if (badge) { badge.textContent = `${pptSlides.length} slides`; badge.style.display = 'inline-flex'; }
+
+            pptSlides.forEach((slide, i) => {
+                if (!slide || !slide.slide_type) return;
+                const card = document.createElement('div');
+                card.className = 'ppt-slide-card';
+                card.dataset.type = slide.slide_type;
+
+                card.id = `ppt-card-${i}`;
+
+                const typeLabel = slide.slide_type.toUpperCase();
+                const isFixed = ['cover', 'section', 'thankyou'].includes(slide.slide_type);
+
+                // Data preview
+                let dataPreview = '';
+                let hasSfData = false;
+
+                if (slide.data && slide.data.length > 0) {
+                    hasSfData = true;
+                    if (slide.slide_type === 'kpi') {
+                        dataPreview = slide.data.slice(0, 4).map(d => `<strong>${escapeHtml(d.value)}</strong> ${escapeHtml(d.label)}`).join(' &nbsp;|&nbsp; ');
+                    }
+
+                    else if (slide.slide_type === 'table') {
+                        const cols = Object.keys(slide.data[0] || {}).map(escapeHtml).join(', ');
+
+                        dataPreview = `${escapeHtml(String(slide.data.length))} rows · Columns: ${cols} `;
+                    }
+
+                    else if (slide.slide_type === 'timeline') {
+                        dataPreview = slide.data.map(d => `${escapeHtml(d.label)}: ${escapeHtml(d.event)} `).join(' → ');
+                    }
+
+                    else {
+                        dataPreview = slide.data.slice(0, 5).map(d => `${escapeHtml(d.label)}: ${escapeHtml(d.value)} `).join(', ');
+
+                        if (slide.data.length > 5) dataPreview += ` + ${slide.data.length - 5} more`;
+                    }
+                }
+
+                else if (slide.bullets && slide.bullets.length > 0) {
+                    hasSfData = true;
+                    dataPreview = slide.bullets.slice(0, 2).map(escapeHtml).join(' · ');
+                }
+
+                const sfBadge = (hasSfData || slide.data_source === 'Salesforce')
+                    ? `<span class="sf-tag">🔗 SF Data</span>`
+                    : '';
+
+                // Insights
+                let insightsHtml = '';
+
+                if (slide.insights && slide.insights.length > 0) {
+                    insightsHtml = `<div class="ppt-insights">${slide.insights.map(ins => `<div class="ppt-insight-item">${escapeHtml(ins)}</div>`).join('')}</div>`;
+                }
+
+                // Action buttons (only for non-fixed slides)
+                const actionBtns = !isFixed ? `<div class="ppt-slide-actions"><button class="ppt-slide-action-btn" onclick="togglePPTEdit(${i})"><i class="fas fa-pen"></i> Edit</button><button class="ppt-slide-action-btn remove" onclick="removePPTSlide(${i})"><i class="fas fa-trash"></i></button></div>` : `<div class="ppt-slide-type-badge" style="color:#94a3b8">FIXED</div>`;
+
+                card.innerHTML = `<div class="ppt-slide-header"><div style="display:flex;align-items:center;gap:8px;"><span class="ppt-slide-number">Slide ${i + 1}</span> <span class="ppt-slide-type-badge">${escapeHtml(typeLabel)}</span></div>${actionBtns}</div><div class="ppt-slide-title">${escapeHtml(slide.title || '')}</div>${slide.subtitle ? `<div class="ppt-slide-subtitle">${escapeHtml(slide.subtitle)}</div>` : ''}${dataPreview ? `<div class="ppt-data-preview">${dataPreview}</div>` : ''}${sfBadge}${insightsHtml}<div id="ppt-edit-${i}" class="ppt-edit-area hidden"><textarea id="ppt-edit-input-${i}" placeholder="Describe your change... e.g. 'Change title to Q4 Summary' or 'Remove the drop rate metric'"></textarea><div class="ppt-edit-btns"><button class="ppt-edit-cancel" onclick="togglePPTEdit(${i})">Cancel</button> <button class="ppt-edit-apply" onclick="applyPPTEdit(${i})">✓ Apply</button></div></div>`;
+                slidesArea.appendChild(card);
+            });
+
+            slidesArea.scrollTop = 0;
+        }
+
+        function togglePPTEdit(idx) {
+            const editArea = document.getElementById(`ppt-edit-${idx}`);
+            editArea.classList.toggle('hidden');
+
+            if (!editArea.classList.contains('hidden')) {
+                document.getElementById(`ppt-edit-input-${idx}`).focus();
+            }
+        }
+
+        function removePPTSlide(idx) {
+            pptSlides.splice(idx, 1);
+            renderPPTSlides();
+        }
+
+        async function applyPPTEdit(idx) {
+            const input = document.getElementById(`ppt-edit-input-${idx}`);
+            const editPrompt = input.value.trim();
+            if (!editPrompt) return;
+
+            const card = document.getElementById(`ppt-card-${idx}`);
+            const applyBtn = card ? card.querySelector('.ppt-edit-apply') : null;
+            if (applyBtn) { applyBtn.textContent = 'Applying...'; applyBtn.disabled = true; }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/ppt/edit`, {
+                    method: 'POST',
+                    headers: {
+
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SESSION_TOKEN}`
+                    }
+
+                    ,
+                    body: JSON.stringify({
+                        slides: pptSlides,
+                        edit_index: idx,
+                        edit_prompt: editPrompt
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    pptSlides = data.slides;
+                    renderPPTSlides();
+                }
+
+                else {
+                    showToast('Edit failed — please try again', 'error');
+                    if (applyBtn) { applyBtn.textContent = '✓ Apply'; applyBtn.disabled = false; }
+                }
+            }
+
+            catch (err) {
+                showToast('Network error', 'error');
+                if (applyBtn) { applyBtn.textContent = '✓ Apply'; applyBtn.disabled = false; }
+            }
+        }
+
+        async function proceedToDownload() {
+            const btn = document.getElementById('ppt-proceed-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+
+            // Highlight step 3
+            document.getElementById('ppt-step-3').style.background = 'var(--primary-color)';
+            document.getElementById('ppt-step-3').style.color = 'white';
+            document.getElementById('ppt-step-3').style.fontWeight = '600';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/ppt/download`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SESSION_TOKEN}`
+                    },
+                    body: JSON.stringify({ slides: pptSlides })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    const slideCount = pptSlides.length;
+                    const downloadUrl = `${API_BASE_URL}${data.download_url}`;
+                    const fileName = data.filename || data.download_url.split('/').pop() || 'CFPilot_Presentation.pptx';
+
+                    // 1. Toast notification
+                    showToast('✅ Presentation ready! Returning to chat...', 'success');
+
+                    // 2. Auto-close PPT view after brief pause
+                    setTimeout(() => {
+                        closePPTView();
+
+                        // 3. Inject success bot message with download link into main chat
+                        // Build message DOM directly — bypasses marked.parse which escapes HTML tags
+                        const msgRow = document.createElement('div');
+                        msgRow.className = 'msg-row bot';
+                        msgRow.dataset.index = allMessages.length;
+
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'message';
+
+                        // Text node (safe, no HTML)
+                        const textNode = document.createTextNode('Your presentation has been generated! Click below to download your deck.');
+                        msgDiv.appendChild(textNode);
+
+                        // Download card
+                        const card = document.createElement('div');
+                        card.style.cssText = 'margin-top:10px;padding:12px 16px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(16,185,129,0.08));border:1px solid rgba(99,102,241,0.25);border-radius:10px;';
+
+                        const title = document.createElement('div');
+                        title.style.cssText = 'font-weight:600;font-size:0.95em;margin-bottom:6px;';
+                        title.textContent = '🎉 Your presentation is ready!';
+
+                        const subtitle = document.createElement('div');
+                        subtitle.style.cssText = 'font-size:0.82em;color:var(--text-secondary);margin-bottom:10px;';
+                        subtitle.textContent = slideCount + ' slides generated';
+
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = fileName;
+                        link.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--primary-color);color:white;border-radius:8px;text-decoration:none;font-size:0.87em;font-weight:600;cursor:pointer;';
+                        link.innerHTML = '<i class="fas fa-file-powerpoint"></i> Download ' + escapeHtml(fileName);
+                        link.addEventListener('click', function() {
+                            showToast('⬇️ Your download will start shortly...', 'info');
+                        });
+
+                        card.appendChild(title);
+                        card.appendChild(subtitle);
+                        card.appendChild(link);
+                        msgDiv.appendChild(card);
+
+                        // Timestamp
+                        const ts = document.createElement('span');
+                        ts.className = 'timestamp';
+                        ts.textContent = formatTimestamp(new Date());
+                        msgDiv.appendChild(ts);
+
+                        const avatar = document.createElement('div');
+                        avatar.className = 'avatar';
+                        avatar.innerHTML = '<i class="fas fa-robot"></i>';
+
+                        msgRow.appendChild(avatar);
+                        msgRow.appendChild(msgDiv);
+
+                        allMessages.push({ text: 'Presentation ready', sender: 'bot', timestamp: new Date() });
+                        const chatContainer = document.getElementById('chat-container');
+                        chatContainer.appendChild(msgRow);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                        // Save to chat history so it persists across refresh/sessions
+                        fetch(`${API_BASE_URL}/chat/save_message`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SESSION_TOKEN}`
+                            },
+                            body: JSON.stringify({
+                                sender: 'bot',
+                                text: `__PPT_DOWNLOAD__${downloadUrl}__SLIDES__${slideCount}__NAME__${fileName}`
+                            })
+                        }).catch(e => console.warn('PPT message save failed:', e));
+                    }, 2500);
+
+                } else {
+                    showToast('Failed to generate PPTX — please try again.', 'error');
+                    btn.innerHTML = '<i class="fas fa-download"></i>&nbsp;Generate &amp; Download';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error('PPT download error:', err);
+                showToast('Network error during download.', 'error');
+                btn.innerHTML = '<i class="fas fa-download"></i>&nbsp;Generate &amp; Download';
+                btn.disabled = false;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
